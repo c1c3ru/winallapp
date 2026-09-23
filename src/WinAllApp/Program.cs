@@ -17,6 +17,9 @@ namespace WinAllApp
         ///   WinAllApp.exe --config x.json    usa outro arquivo de configuração
         ///   WinAllApp.exe --simulacao        testa com instaladores fictícios (nada é instalado)
         ///   WinAllApp.exe --extrair-config   grava o config.json embutido ao lado do .exe para edição
+        ///   WinAllApp.exe --simulacao --simular-windows 7   força o Windows detectado (7, 8.1, 10 ou 11) na simulação;
+        ///                                    com --sem-tls12 / --sem-dotnet48 simula os pré-requisitos do Chocolatey ausentes
+        ///   WinAllApp.exe --tutorial         mostra o tutorial de boas-vindas de novo
         /// </summary>
         [STAThread]
         public static int Main(string[] args)
@@ -44,22 +47,81 @@ namespace WinAllApp
                 return 1;
             }
 
-            var pastaInstaladores = InstallCommandBuilder.ResolverPastaInstaladores(carga.Config, carga.PastaConfig);
-            var viewModel = new MainViewModel(carga.Config, pastaInstaladores, new ProcessRunner());
+            var simulacao = origem.StartsWith("SIMULAÇÃO", StringComparison.Ordinal);
+            AmbienteSistema ambiente;
+            try
+            {
+                ambiente = CriarAmbiente(args, simulacao, carga.PastaConfig);
+            }
+            catch (ArgumentException ex)
+            {
+                Erro(ex.Message);
+                return 1;
+            }
+
+            var viewModel = CriarViewModel(carga, ambiente);
             viewModel.RegistrarMensagem("Configuração: " + origem);
-            viewModel.RegistrarMensagem("Pasta dos instaladores: " + pastaInstaladores);
+            viewModel.RegistrarMensagem("Pasta de rede (fonte primária): " + viewModel.PastaRede);
+            viewModel.RegistrarMensagem("Sistema: " + ambiente.Resumo());
+            if (!ambiente.UsaWinget && !ambiente.PreRequisitosChocoOk)
+                viewModel.RegistrarMensagem("Aviso: sem .NET 4.8 e TLS 1.2 o Chocolatey não será usado; só a pasta de rede.");
             viewModel.RegistrarAvisos(carga.Avisos);
 
             var janela = WindowFactory.CriarJanelaPrincipal(viewModel);
-            if (origem.StartsWith("SIMULAÇÃO", StringComparison.Ordinal)) janela.Title += " — MODO SIMULAÇÃO";
+            if (simulacao) janela.Title += " — MODO SIMULAÇÃO";
+
+            var tutorial = new PreferenciasUsuario();
+            janela.Loaded += (s, e) =>
+            {
+                viewModel.VerificarPastaRedeCommand.Execute(null);
+                if (DeveMostrarOnboarding(args, tutorial)) WindowFactory.MostrarOnboarding(janela, tutorial);
+            };
+            viewModel.TutorialSolicitado += (s, e) => WindowFactory.MostrarOnboarding(janela, tutorial);
             return app.Run(janela);
         }
 
         public static string PastaDoExecutavel => AppDomain.CurrentDomain.BaseDirectory;
 
+        /// <summary>Na primeira execução (ou com --tutorial) o tutorial de boas-vindas abre sobre a janela principal.</summary>
+        public static bool DeveMostrarOnboarding(string[] args, PreferenciasUsuario preferencias) =>
+            TemOpcao(args, "--tutorial") || !preferencias.OnboardingConcluido;
+
+        /// <summary>Monta a fila com o roteador das 4 categorias (rede primeiro; winget/Chocolatey conforme o Windows).</summary>
+        public static MainViewModel CriarViewModel(ConfigLoadResult carga, AmbienteSistema ambiente)
+        {
+            var pastaInstaladores = InstallCommandBuilder.ResolverPastaInstaladores(carga.Config, carga.PastaConfig);
+            var destinoCopias = InstallCommandBuilder.ResolverPastaDestinoCopias(carga.Config, carga.PastaConfig);
+            var roteador = new RoteadorInstalacao(new ContextoInstalacao(pastaInstaladores, destinoCopias, ambiente));
+            var fila = new InstallQueue(new ProcessRunner(), new CopiadorPastas(), roteador);
+            return new MainViewModel(new LabCatalog(carga.Config), fila);
+        }
+
+        /// <summary>
+        /// Máquina real: detectada pelo registro. Simulação: Windows escolhido em --simular-windows (padrão 10),
+        /// com winget.bat/choco.bat fictícios no lugar das ferramentas reais.
+        /// </summary>
+        public static AmbienteSistema CriarAmbiente(string[] args, bool simulacao, string pastaConfig)
+        {
+            if (!simulacao) return DetectorAmbiente.Detectar();
+
+            var mocks = Path.Combine(pastaConfig, "mock-installers");
+            return AmbienteSistema.Simular(ValorDaOpcao(args, "--simular-windows") ?? "10",
+                caminhoWinget: Path.Combine(mocks, "winget.bat"),
+                caminhoChoco: Path.Combine(mocks, "choco.bat"),
+                dotNet48: !TemOpcao(args, "--sem-dotnet48"),
+                tls12: !TemOpcao(args, "--sem-tls12"));
+        }
+
+        public static string ValorDaOpcao(string[] args, string opcao)
+        {
+            for (var i = 0; i < args.Length - 1; i++)
+                if (string.Equals(args[i], opcao, StringComparison.OrdinalIgnoreCase)) return args[i + 1];
+            return null;
+        }
+
         public static ConfigLoadResult CarregarConfig(string[] args, out string origem)
         {
-            if (TemOpcao(args, "--simulacao"))
+            if (TemOpcao(args, "--simulacao") || ValorDaOpcao(args, "--simular-windows") != null)
             {
                 var pasta = RecursosEmbutidos.ExtrairSimulacao(Path.Combine(Path.GetTempPath(), "WinAllApp-simulacao"));
                 origem = "SIMULAÇÃO (" + pasta + ")";

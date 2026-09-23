@@ -9,6 +9,8 @@
     <RootNamespace>WinAllApp</RootNamespace>
     <AssemblyName>WinAllApp</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Ícone do .exe, da janela e da barra de tarefas: símbolo do IFCE -->
+    <ApplicationIcon>Imagens\ifce.ico</ApplicationIcon>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
@@ -29,8 +31,9 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Views\*.xaml" LogicalName="WinAllApp.Views.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Imagens\logo-ifce.png" LogicalName="WinAllApp.Imagens.%(Filename)%(Extension)" />
     <EmbeddedResource Include="config.json;config.simulacao.json" LogicalName="WinAllApp.Config.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\..\mock-installers\*.bat;..\..\mock-installers\*.txt" LogicalName="WinAllApp.Simulacao.%(Filename)%(Extension)" Link="mock-installers\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\mock-installers\**\*.bat;..\..\mock-installers\**\*.txt" LogicalName="WinAllApp.Simulacao.%(RecursiveDir)%(Filename)%(Extension)" Link="mock-installers\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <PropertyGroup>

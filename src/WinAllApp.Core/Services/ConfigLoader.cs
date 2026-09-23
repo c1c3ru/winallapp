@@ -73,9 +73,26 @@ namespace WinAllApp.Core.Services
             {
                 if (string.IsNullOrWhiteSpace(p.Id)) { erros.Add($"Programa \"{p.Nome}\" sem id."); continue; }
                 if (!ids.Add(p.Id)) erros.Add($"Programa com id duplicado: {p.Id}.");
-                if (string.IsNullOrWhiteSpace(p.Instalador)) erros.Add($"Programa {p.Id} sem caminho de instalador.");
-                else if (string.IsNullOrWhiteSpace(p.Argumentos) && InstallCommandBuilder.ResolverTipo(p) == TipoInstalador.Exe)
+                if (!string.IsNullOrWhiteSpace(p.Categoria) && !CategoriaResolver.TentarConverter(p.Categoria, out _))
+                    erros.Add($"Programa {p.Id} com categoria desconhecida: \"{p.Categoria}\" (use gerenciador, offline_licenciado, offline_gratuito ou copia_pasta).");
+                if (!string.IsNullOrWhiteSpace(p.WindowsMinimo) && AmbienteSistema.ConverterVersao(p.WindowsMinimo) == null)
+                    erros.Add($"Programa {p.Id} com windowsMinimo inválido: \"{p.WindowsMinimo}\" (use 7, 8.1, 10 ou 11).");
+
+                var categoria = CategoriaResolver.Resolver(p);
+                var temPacote = !string.IsNullOrWhiteSpace(p.WingetId) || !string.IsNullOrWhiteSpace(p.ChocoId);
+                if (string.IsNullOrWhiteSpace(p.Instalador))
+                {
+                    if (categoria == CategoriaInstalacao.CopiaPasta) erros.Add($"Programa {p.Id} (cópia de pasta) sem a pasta de origem em \"instalador\".");
+                    else if (categoria != CategoriaInstalacao.Gerenciador || !temPacote) erros.Add($"Programa {p.Id} sem caminho de instalador.");
+                }
+                else if (categoria != CategoriaInstalacao.CopiaPasta && string.IsNullOrWhiteSpace(p.Argumentos)
+                         && InstallCommandBuilder.ResolverTipo(p) == TipoInstalador.Exe)
+                {
                     avisos.Add($"Programa {p.Id} (.exe) sem argumentos silenciosos; a instalação pode abrir janelas.");
+                }
+
+                if (categoria == CategoriaInstalacao.Gerenciador && !temPacote)
+                    avisos.Add($"Programa {p.Id} é \"gerenciador\" mas não tem wingetId nem chocoId; só a pasta de rede será usada.");
             }
 
             if (config.Blocos.Count == 0) erros.Add("Nenhum bloco definido.");

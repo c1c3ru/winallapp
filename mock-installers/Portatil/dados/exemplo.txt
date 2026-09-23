@@ -1,0 +1,1 @@
+Arquivo de exemplo em subpasta (a copia inclui subpastas).

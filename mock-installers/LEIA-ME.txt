@@ -2,3 +2,9 @@ Instaladores FICTICIOS (.bat) usados pelo config.simulacao.json.
 Cada um so grava uma linha em instalacoes-simuladas.log (nome + parametros) e espera ~2 s.
 falha-setup.bat sai com codigo 1603 (erro) e reinicio-setup.bat com 3010 (sucesso, reiniciar).
 Para testar no Windows:  WinAllApp.exe --config config.simulacao.json
+
+Motor de 4 categorias (laboratorio "Motor: 4 categorias" no BL1):
+- winget.bat e choco.bat substituem o winget.exe e o choco.exe e so registram o comando no log;
+- "Pacote Licenciado\setup-licenciado.bat" simula um instalador licenciado numa pasta com espaco;
+- a pasta Portatil e copiada para destino-copias (categoria copia_pasta).
+Forcar o Windows detectado:  WinAllApp.exe --simulacao --simular-windows 7   (ou 10, 11)

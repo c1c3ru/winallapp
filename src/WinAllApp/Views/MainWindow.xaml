@@ -14,7 +14,8 @@
   <Window.Resources>
     <BooleanToVisibilityConverter x:Key="BoolParaVisivel" />
 
-    <SolidColorBrush x:Key="CorPrimaria" Color="#FF1F5FAD" />
+    <!-- Verde do IFCE -->
+    <SolidColorBrush x:Key="CorPrimaria" Color="#FF2F8A3F" />
     <SolidColorBrush x:Key="CorLateral" Color="#FFF1F4F8" />
     <SolidColorBrush x:Key="CorBorda" Color="#FFD5DBE3" />
     <SolidColorBrush x:Key="CorTextoSecundario" Color="#FF5B6573" />
@@ -43,7 +44,7 @@
       <Setter Property="Foreground" Value="{StaticResource CorTextoSecundario}" />
       <Style.Triggers>
         <DataTrigger Binding="{Binding Estado}" Value="Instalando">
-          <Setter Property="Foreground" Value="#FF1F5FAD" />
+          <Setter Property="Foreground" Value="#FF2F8A3F" />
         </DataTrigger>
         <DataTrigger Binding="{Binding Estado}" Value="Sucesso">
           <Setter Property="Foreground" Value="#FF1E7B34" />
@@ -56,6 +57,9 @@
         </DataTrigger>
         <DataTrigger Binding="{Binding Estado}" Value="Cancelado">
           <Setter Property="Foreground" Value="#FF8A5A00" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Estado}" Value="Incompativel">
+          <Setter Property="Foreground" Value="#FFB3261E" />
         </DataTrigger>
       </Style.Triggers>
     </Style>
@@ -91,10 +95,44 @@
     <Border DockPanel.Dock="Left" Width="260" Background="{StaticResource CorLateral}"
             BorderBrush="{StaticResource CorBorda}" BorderThickness="0,0,1,0">
       <DockPanel Margin="14" IsEnabled="{Binding PodeNavegar}">
-        <TextBlock DockPanel.Dock="Top" Text="WinAllApp" FontSize="20" FontWeight="SemiBold"
-                   Foreground="{StaticResource CorPrimaria}" />
-        <TextBlock DockPanel.Dock="Top" Text="Instalação em lote por laboratório" Foreground="{StaticResource CorTextoSecundario}"
-                   Margin="0,0,0,18" />
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,18">
+          <Image x:Name="ImagemLogo" DockPanel.Dock="Left" Width="56" Height="56" Margin="0,0,10,0" VerticalAlignment="Center"
+                 ToolTip="IFCE · Campus Maracanaú" />
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="WinAllApp" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource CorPrimaria}" />
+            <TextBlock Text="Instalação em lote por laboratório" Foreground="{StaticResource CorTextoSecundario}" TextWrapping="Wrap" />
+          </StackPanel>
+        </DockPanel>
+
+        <!-- Sistema detectado, pasta de rede e tutorial -->
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
+          <TextBlock Text="Pasta de rede" Style="{StaticResource Rotulo}" />
+          <TextBlock x:Name="TextoPastaRede" Text="{Binding PastaRedeStatus}" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource CorTextoSecundario}" />
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding PastaRedeAcessivel}" Value="True">
+                    <Setter Property="Foreground" Value="#FF1E7B34" />
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding PastaRedeAcessivel}" Value="False">
+                    <Setter Property="Foreground" Value="#FFB3261E" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+          <TextBlock Text="Sistema" Style="{StaticResource Rotulo}" Margin="0,6,0,6" />
+          <TextBlock x:Name="TextoAmbiente" Text="{Binding ResumoAmbiente, Mode=OneWay}" TextWrapping="Wrap" FontSize="12"
+                     Foreground="{StaticResource CorTextoSecundario}" Margin="0,0,0,10" />
+          <StackPanel Orientation="Horizontal">
+            <Button x:Name="BotaoVerificarRede" Content="Verificar rede" Style="{StaticResource Botao}"
+                    Command="{Binding VerificarPastaRedeCommand}" />
+            <Button x:Name="BotaoTutorial" Content="Tutorial" Style="{StaticResource Botao}" Margin="0"
+                    Command="{Binding AbrirTutorialCommand}" />
+          </StackPanel>
+        </StackPanel>
 
         <TextBlock DockPanel.Dock="Top" Text="1. Bloco" Style="{StaticResource Rotulo}" />
         <ComboBox x:Name="ComboBlocos" DockPanel.Dock="Top" Margin="0,0,0,18" MinHeight="28"
@@ -170,6 +208,9 @@
                           <TextBlock Text="{Binding Observacao}" FontSize="12" TextWrapping="Wrap" FontStyle="Italic"
                                      Foreground="#FF8A5A00"
                                      Visibility="{Binding TemObservacao, Converter={StaticResource BoolParaVisivel}}" />
+                          <TextBlock Text="{Binding AvisoCompatibilidade}" FontSize="12" TextWrapping="Wrap" FontWeight="SemiBold"
+                                     Foreground="#FFB3261E"
+                                     Visibility="{Binding TemAvisoCompatibilidade, Converter={StaticResource BoolParaVisivel}}" />
                         </StackPanel>
                       </CheckBox>
                       <TextBlock Grid.Column="1" Text="{Binding EstadoTexto}" Style="{StaticResource EstadoTexto}"

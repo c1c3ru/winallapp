@@ -36,11 +36,17 @@ namespace WinAllApp
             {
                 // Quebras de linha CRLF garantidas: o cmd.exe interpreta mal .bat só com LF.
                 var texto = LerTexto(nome).Replace("\r\n", "\n").Replace("\n", "\r\n");
-                File.WriteAllText(Path.Combine(mocks, nome.Substring(PrefixoSimulacao.Length)), texto, new UTF8Encoding(false));
+                // Subpastas (ex.: "Pacote Licenciado", "Portatil\dados") vêm no nome do recurso com \ ou /.
+                var relativo = nome.Substring(PrefixoSimulacao.Length).Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+                var destino = Path.Combine(mocks, relativo);
+                Directory.CreateDirectory(Path.GetDirectoryName(destino));
+                File.WriteAllText(destino, texto, new UTF8Encoding(false));
             }
 
             var log = Path.Combine(mocks, "instalacoes-simuladas.log");
             if (File.Exists(log)) File.Delete(log);
+            var copias = Path.Combine(pasta, "destino-copias");
+            if (Directory.Exists(copias)) Directory.Delete(copias, recursive: true);
             return pasta;
         }
     }

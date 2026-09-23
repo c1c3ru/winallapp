@@ -42,7 +42,8 @@ namespace WinAllApp.Core.Services
         public static TipoInstalador ResolverTipo(Programa programa)
         {
             var tipo = (programa.Tipo ?? string.Empty).Trim().ToLowerInvariant();
-            if (tipo.Length == 0)
+            // "tipo" também aceita a categoria (ex.: "winget", "copia_pasta"): aí o tipo do arquivo vem da extensão.
+            if (tipo != "exe" && tipo != "msi" && tipo != "bat" && tipo != "cmd")
                 tipo = (Path.GetExtension(programa.Instalador ?? string.Empty) ?? string.Empty).TrimStart('.').ToLowerInvariant();
 
             switch (tipo)
@@ -68,6 +69,25 @@ namespace WinAllApp.Core.Services
             if (string.IsNullOrWhiteSpace(pasta)) return pastaConfig;
             if (Path.IsPathRooted(pasta) || string.IsNullOrWhiteSpace(pastaConfig)) return pasta;
             return Path.GetFullPath(Path.Combine(pastaConfig, pasta));
+        }
+
+        /// <summary>Pasta local das cópias (copia_pasta): expande %VARIAVEIS% e resolve caminho relativo à pasta do config.json.</summary>
+        public static string ResolverPastaDestinoCopias(InstallerConfig config, string pastaConfig)
+        {
+            var pasta = config.PastaDestinoCopias;
+            if (string.IsNullOrWhiteSpace(pasta)) return ContextoInstalacao.PastaDestinoCopiasPadrao;
+            pasta = Environment.ExpandEnvironmentVariables(pasta.Trim());
+            if (Path.IsPathRooted(pasta) || string.IsNullOrWhiteSpace(pastaConfig)) return pasta;
+            return Path.GetFullPath(Path.Combine(pastaConfig, pasta));
+        }
+
+        /// <summary>Comando de uma ferramenta (winget.exe, choco.exe). Um .bat/.cmd (simulação) roda via cmd.exe.</summary>
+        public static InstallCommand ConstruirFerramenta(string caminho, string argumentos)
+        {
+            var extensao = (Path.GetExtension(caminho) ?? string.Empty).ToLowerInvariant();
+            if (extensao == ".bat" || extensao == ".cmd")
+                return new InstallCommand("cmd.exe", $"/c \"\"{caminho}\" {argumentos}\"", caminho);
+            return new InstallCommand(caminho, argumentos, caminho);
         }
 
         public static InstallCommand Construir(Programa programa, string pastaInstaladores)

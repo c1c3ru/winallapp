@@ -25,6 +25,9 @@ namespace WinAllApp.Core.ViewModels
         private double _progresso;
         private string _statusTexto;
         private CancellationTokenSource _cancelamento;
+        private string _pastaRedeStatus;
+        private bool? _pastaRedeAcessivel;
+        private bool _verificandoPastaRede;
 
         public MainViewModel(InstallerConfig config, string pastaInstaladores, IProcessRunner runner)
             : this(new LabCatalog(config), new InstallQueue(runner, pastaInstaladores))
@@ -46,6 +49,9 @@ namespace WinAllApp.Core.ViewModels
             LimparSelecaoCommand = new RelayCommand(() => DefinirSelecao(false), () => !Ocupado && TotalSelecionados > 0);
             InstalarCommand = new AsyncRelayCommand(InstalarAsync, () => !Ocupado && TotalSelecionados > 0);
             CancelarCommand = new RelayCommand(Cancelar, () => Ocupado && _cancelamento != null && !_cancelamento.IsCancellationRequested);
+            VerificarPastaRedeCommand = new AsyncRelayCommand(VerificarPastaRedeAsync, () => !_verificandoPastaRede);
+            AbrirTutorialCommand = new RelayCommand(() => TutorialSolicitado?.Invoke(this, EventArgs.Empty));
+            PastaRedeStatus = "Pasta de rede: ainda não verificada.";
 
             StatusTexto = "Escolha um bloco e depois um laboratório.";
             if (Blocos.Count == 1) BlocoSelecionado = Blocos[0];
@@ -60,6 +66,61 @@ namespace WinAllApp.Core.ViewModels
         public RelayCommand LimparSelecaoCommand { get; }
         public AsyncRelayCommand InstalarCommand { get; }
         public RelayCommand CancelarCommand { get; }
+        public AsyncRelayCommand VerificarPastaRedeCommand { get; }
+        public RelayCommand AbrirTutorialCommand { get; }
+
+        /// <summary>Disparado pelo botão "Tutorial"; a janela abre o onboarding.</summary>
+        public event EventHandler TutorialSolicitado;
+
+        /// <summary>Máquina detectada (ou simulada) usada no roteamento winget/Chocolatey.</summary>
+        public AmbienteSistema Ambiente => _fila.Roteador.Contexto.Ambiente;
+
+        public string ResumoAmbiente => Ambiente.Resumo();
+
+        /// <summary>Fonte primária dos instaladores (ex.: \\servidor\instaladores).</summary>
+        public string PastaRede => _fila.Roteador.Contexto.PastaInstaladores;
+
+        public string PastaRedeStatus
+        {
+            get => _pastaRedeStatus;
+            private set => Set(ref _pastaRedeStatus, value);
+        }
+
+        /// <summary>null = ainda não verificada.</summary>
+        public bool? PastaRedeAcessivel
+        {
+            get => _pastaRedeAcessivel;
+            private set => Set(ref _pastaRedeAcessivel, value);
+        }
+
+        /// <summary>Confere, sem travar a tela, se a pasta de rede responde (UNC inacessível pode demorar).</summary>
+        public async Task VerificarPastaRedeAsync()
+        {
+            if (_verificandoPastaRede) return;
+            _verificandoPastaRede = true;
+            VerificarPastaRedeCommand.NotificarMudanca();
+            PastaRedeStatus = "Verificando a pasta de rede…";
+            var pasta = PastaRede;
+            var existe = _fila.Roteador.Contexto.PastaExiste;
+            bool ok;
+            try
+            {
+                ok = !string.IsNullOrWhiteSpace(pasta) && await Task.Run(() => existe(pasta));
+            }
+            catch
+            {
+                ok = false;
+            }
+            finally
+            {
+                _verificandoPastaRede = false;
+            }
+
+            PastaRedeAcessivel = ok;
+            PastaRedeStatus = ok ? "Pasta de rede acessível: " + pasta : "Pasta de rede INACESSÍVEL: " + pasta;
+            AdicionarLog(PastaRedeStatus);
+            VerificarPastaRedeCommand.NotificarMudanca();
+        }
 
         public Bloco BlocoSelecionado
         {
@@ -226,7 +287,9 @@ namespace WinAllApp.Core.ViewModels
             var falhas = resultados.Count(r => r.Estado == EstadoInstalacao.Falha);
             var cancelados = resultados.Count(r => r.Estado == EstadoInstalacao.Cancelado);
             Progresso = 100;
-            StatusTexto = $"Concluído: {ok} instalado(s), {falhas} falha(s), {cancelados} cancelado(s).";
+            var incompativeis = resultados.Count(r => r.Estado == EstadoInstalacao.Incompativel);
+            StatusTexto = $"Concluído: {ok} instalado(s), {falhas} falha(s), {cancelados} cancelado(s)."
+                          + (incompativeis > 0 ? $" {incompativeis} incompatível(is) com este Windows." : string.Empty);
             AdicionarLog(StatusTexto);
             Ocupado = false;
         }
@@ -247,7 +310,7 @@ namespace WinAllApp.Core.ViewModels
 
             foreach (var p in _catalogo.ObterProgramas(lab))
             {
-                var item = new ProgramaItemViewModel(p);
+                var item = new ProgramaItemViewModel(p, Ambiente);
                 item.SelecaoAlterada += ItemSelecaoAlterada;
                 Programas.Add(item);
             }
