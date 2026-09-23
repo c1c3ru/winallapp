@@ -3,13 +3,15 @@
 > Fonte de verdade para o encerramento do projeto (release portátil, onboarding e documentação).
 > Branch: `claude/installer-por-laboratorio`. Atualizado a cada ciclo.
 
+**Situação: concluído.** Build de Release gerada, README detalhado e onboarding exibido corretamente.
+
 ## Histórico de ciclos
 
 | Ciclo | O que foi feito | Resultado |
 |---|---|---|
 | 1 | Onboarding (3 passos), logo do IFCE na tela e no tutorial, ícone do .exe, README com tutorial, build Release no Linux. | Build Release 0 erros; 79 testes da lógica ok no Linux |
 | 2 | CI Windows: build Release, testes da lógica, telas reais (onboarding e principal) e execução do `.exe` real. | Build ok; 1 teste falhou: na 2ª execução do `.exe` real o tutorial voltou (ver seção 4) |
-| 3 | Correção: as preferências passam a respeitar a variável `%APPDATA%`. | _em andamento_ |
+| 3 | Correção: as preferências passam a respeitar a variável `%APPDATA%`. | **CI Windows verde** (commit `8299418`): build Release, todos os testes da lógica, telas reais e `.exe` real; `ultima-build` publicada |
 
 Tentativas de correção de compilação da interface: **1 de 5**.
 
@@ -45,4 +47,9 @@ Tentativas de correção de compilação da interface: **1 de 5**.
   vinha de `Environment.GetFolderPath(ApplicationData)`, que ignora a variável `%APPDATA%` e lê sempre o perfil do Windows;
   o teste (e qualquer perfil redirecionado por script) grava em outro lugar. Agora `PreferenciasUsuario.PastaAppData()` usa
   `%APPDATA%` quando definida e só cai no perfil quando ela não existe.
-- _Aguardando o CI Windows do ciclo 3._
+- **Nenhuma falha aberta.** O CI Windows do ciclo 3 passou: o `.exe` real mostra o tutorial na 1ª execução e não na 2ª.
+- Capturas conferidas (branch `capturas-ci`): tutorial com logo e 3 passos; tela principal com logo, pasta de rede
+  (verde), bloco "Sistema" e avisos de Windows 7 em vermelho.
+- Ajuste visual opcional, sem impacto: quando o nome do programa já contém a versão (ex.: "Visual Studio 2022"),
+  o aviso de incompatibilidade repete a versão ("… 2022 2022 exige Windows 10").
+- Avisos de compilação restantes (não bloqueiam): CA1416 no alvo net8.0 do Core (registro do Windows), que só roda no Windows.
