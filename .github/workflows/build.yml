@@ -1,0 +1,42 @@
+name: build-windows
+
+on:
+  push:
+    branches: [ main, 'claude/**' ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Compilar (Release, .NET Framework 4.8)
+        run: dotnet build WinAllApp.sln -c Release
+
+      - name: Testes da lógica (inclui simulação com .bat fictícios)
+        run: dotnet test tests/WinAllApp.Core.Tests -c Release --no-build --logger "console;verbosity=normal" --logger GitHubActions
+
+      - name: Teste da tela WPF (abre a janela e simula o usuário)
+        env:
+          WINALLAPP_CAPTURAS: ${{ github.workspace }}\capturas
+        run: dotnet test tests/WinAllApp.UI.Tests -c Release --no-build --logger "console;verbosity=normal" --logger GitHubActions
+
+      - name: Publicar capturas da tela
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-da-tela
+          path: capturas
+          if-no-files-found: ignore
+
+      - name: Publicar executável
+        uses: actions/upload-artifact@v4
+        with:
+          name: WinAllApp-net48
+          path: src/WinAllApp/bin/Release/net48

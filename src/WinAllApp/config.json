@@ -1,0 +1,54 @@
+{
+  "pastaInstaladores": "\\\\servidor\\instaladores",
+  "blocos": [
+    {
+      "id": "BL1",
+      "nome": "Bloco 1 (BL1)",
+      "laboratorios": [
+        {
+          "id": "LAMEP",
+          "nome": "LAMEP",
+          "sala": "EXEMPLO",
+          "programas": [ "proteus", "arduino", "autocad", "7zip" ]
+        },
+        {
+          "id": "LCC",
+          "nome": "LCC - Laboratório de Computação",
+          "sala": "EXEMPLO",
+          "programas": [ "vscode", "python", "codeblocks", "7zip" ]
+        },
+        {
+          "id": "GEOTEC",
+          "nome": "Geotecnologia",
+          "sala": "EXEMPLO",
+          "programas": [ "qgis", "googleearth", "autocad", "7zip" ]
+        }
+      ]
+    },
+    {
+      "id": "BL2",
+      "nome": "Bloco 2 (BL2)",
+      "laboratorios": [
+        {
+          "id": "MAT",
+          "nome": "Matemática",
+          "sala": "EXEMPLO",
+          "programas": [ "geogebra", "octave", "7zip" ]
+        }
+      ]
+    }
+  ],
+  "programas": [
+    { "id": "autocad", "nome": "AutoCAD", "versao": "2024", "instalador": "Autodesk\\AutoCAD2024\\Setup.exe", "tipo": "exe", "argumentos": "-q", "timeoutMinutos": 120 },
+    { "id": "proteus", "nome": "Proteus Design Suite", "versao": "8", "instalador": "Labcenter\\Proteus8\\setup.exe", "tipo": "exe", "argumentos": "/S" },
+    { "id": "arduino", "nome": "Arduino IDE", "versao": "1.8.19", "instalador": "Arduino\\arduino-1.8.19-windows.exe", "tipo": "exe", "argumentos": "/S" },
+    { "id": "vscode", "nome": "Visual Studio Code", "versao": "1.70", "instalador": "VSCode\\VSCodeSetup-x64.exe", "tipo": "exe", "argumentos": "/VERYSILENT /NORESTART /MERGETASKS=!runcode" },
+    { "id": "python", "nome": "Python", "versao": "3.8.10", "instalador": "Python\\python-3.8.10-amd64.exe", "tipo": "exe", "argumentos": "/quiet InstallAllUsers=1 PrependPath=1" },
+    { "id": "codeblocks", "nome": "Code::Blocks + MinGW", "versao": "20.03", "instalador": "CodeBlocks\\codeblocks-20.03mingw-setup.exe", "tipo": "exe", "argumentos": "/S" },
+    { "id": "qgis", "nome": "QGIS LTR", "versao": "3.28", "instalador": "QGIS\\QGIS-OSGeo4W-3.28-1.msi", "tipo": "msi", "argumentos": "/qn /norestart" },
+    { "id": "googleearth", "nome": "Google Earth Pro", "versao": "7.3", "instalador": "GoogleEarth\\GoogleEarthProSetup.exe", "tipo": "exe", "argumentos": "OMAHA=1" },
+    { "id": "geogebra", "nome": "GeoGebra Classic", "versao": "6", "instalador": "GeoGebra\\GeoGebra-Windows-Installer.msi", "tipo": "msi" },
+    { "id": "octave", "nome": "GNU Octave", "versao": "8.4", "instalador": "Octave\\octave-8.4.0-w64-installer.exe", "tipo": "exe", "argumentos": "/S" },
+    { "id": "7zip", "nome": "7-Zip", "versao": "23.01", "instalador": "7zip\\7z2301-x64.msi", "tipo": "msi", "argumentos": "/qn /norestart ALLUSERS=1" }
+  ]
+}

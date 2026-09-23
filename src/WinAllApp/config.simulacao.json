@@ -1,0 +1,30 @@
+{
+  "pastaInstaladores": "mock-installers",
+  "blocos": [
+    {
+      "id": "BL1",
+      "nome": "Bloco 1 (BL1)",
+      "laboratorios": [
+        { "id": "LCC", "nome": "LCC - Laboratório de Computação", "sala": "SIMULAÇÃO", "programas": [ "vscode", "python", "codeblocks" ] }
+      ]
+    },
+    {
+      "id": "BL2",
+      "nome": "Bloco 2 (BL2)",
+      "laboratorios": [
+        { "id": "MAT", "nome": "Matemática", "sala": "SIMULAÇÃO", "programas": [ "geogebra", "octave" ] },
+        { "id": "FALHAS", "nome": "Teste de falhas", "sala": "SIMULAÇÃO", "programas": [ "falha", "reinicio", "inexistente" ] }
+      ]
+    }
+  ],
+  "programas": [
+    { "id": "vscode", "nome": "Visual Studio Code (fictício)", "versao": "0.0", "instalador": "vscode-setup.bat", "tipo": "bat", "argumentos": "/VERYSILENT /NORESTART" },
+    { "id": "python", "nome": "Python (fictício)", "versao": "0.0", "instalador": "python-setup.bat", "tipo": "bat", "argumentos": "/quiet InstallAllUsers=1" },
+    { "id": "codeblocks", "nome": "Code::Blocks (fictício)", "versao": "0.0", "instalador": "codeblocks-setup.bat", "tipo": "bat", "argumentos": "/S" },
+    { "id": "geogebra", "nome": "GeoGebra (fictício)", "versao": "0.0", "instalador": "geogebra-setup.bat", "tipo": "bat", "argumentos": "/qn /norestart" },
+    { "id": "octave", "nome": "GNU Octave (fictício)", "versao": "0.0", "instalador": "octave-setup.bat", "tipo": "bat", "argumentos": "/S" },
+    { "id": "falha", "nome": "Instalador que falha (código 1603)", "instalador": "falha-setup.bat", "tipo": "bat", "argumentos": "/S" },
+    { "id": "reinicio", "nome": "Instalador que pede reinício (código 3010)", "instalador": "reinicio-setup.bat", "tipo": "bat", "argumentos": "/S" },
+    { "id": "inexistente", "nome": "Instalador ausente do disco", "instalador": "nao-existe.exe", "tipo": "exe", "argumentos": "/S" }
+  ]
+}

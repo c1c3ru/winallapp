@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aplicativo WPF para .NET Framework 4.8 (Windows 7 SP1 até Windows 11).
+       As telas são XAML "solto" embutido como recurso e carregado com XamlReader em tempo de execução,
+       com toda a interação via bindings/comandos (MVVM). Assim o projeto compila com o SDK .NET em
+       qualquer sistema (inclusive CI Linux), sem depender do compilador de marcação do Visual Studio. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>WinAllApp</RootNamespace>
+    <AssemblyName>WinAllApp</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Views\*.xaml" LogicalName="WinAllApp.Views.%(Filename)%(Extension)" />
+    <None Include="config.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="config.simulacao.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\mock-installers\*.bat;..\..\mock-installers\*.txt" Link="mock-installers\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WinAllApp.Core\WinAllApp.Core.csproj" />
+  </ItemGroup>
+</Project>
