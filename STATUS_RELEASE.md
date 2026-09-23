@@ -8,9 +8,10 @@
 | Ciclo | O que foi feito | Resultado |
 |---|---|---|
 | 1 | Onboarding (3 passos), logo do IFCE na tela e no tutorial, ícone do .exe, README com tutorial, build Release no Linux. | Build Release 0 erros; 79 testes da lógica ok no Linux |
-| 2 | CI Windows: build Release, testes da lógica, telas reais (onboarding e principal) e execução do `.exe` real. | _em andamento_ |
+| 2 | CI Windows: build Release, testes da lógica, telas reais (onboarding e principal) e execução do `.exe` real. | Build ok; 1 teste falhou: na 2ª execução do `.exe` real o tutorial voltou (ver seção 4) |
+| 3 | Correção: as preferências passam a respeitar a variável `%APPDATA%`. | _em andamento_ |
 
-Tentativas de correção de compilação da interface: **0 de 5**.
+Tentativas de correção de compilação da interface: **1 de 5**.
 
 ## 1) Compilação da Release
 
@@ -40,4 +41,8 @@ Tentativas de correção de compilação da interface: **0 de 5**.
 
 ## 4) Falhas na build ou ajustes visuais pendentes
 
-- _Aguardando o CI Windows desta rodada._
+- **Ciclo 2 (corrigido no ciclo 3):** o `.exe` real mostrou o tutorial também na 2ª execução. Causa: o caminho das preferências
+  vinha de `Environment.GetFolderPath(ApplicationData)`, que ignora a variável `%APPDATA%` e lê sempre o perfil do Windows;
+  o teste (e qualquer perfil redirecionado por script) grava em outro lugar. Agora `PreferenciasUsuario.PastaAppData()` usa
+  `%APPDATA%` quando definida e só cai no perfil quando ela não existe.
+- _Aguardando o CI Windows do ciclo 3._

@@ -15,8 +15,19 @@ namespace WinAllApp.Core.Services
 
         public PreferenciasUsuario(string arquivo = null)
         {
-            Arquivo = arquivo ?? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WinAllApp", "preferencias.ini");
+            Arquivo = arquivo ?? Path.Combine(PastaAppData(), "WinAllApp", "preferencias.ini");
+        }
+
+        /// <summary>
+        /// Usa a variável %APPDATA% quando existe (GetFolderPath ignora a variável e sempre lê o perfil do Windows),
+        /// assim um APPDATA redirecionado (perfil móvel, script, teste) é respeitado.
+        /// </summary>
+        public static string PastaAppData()
+        {
+            var variavel = Environment.GetEnvironmentVariable("APPDATA");
+            return string.IsNullOrWhiteSpace(variavel)
+                ? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
+                : variavel;
         }
 
         public string Arquivo { get; }
