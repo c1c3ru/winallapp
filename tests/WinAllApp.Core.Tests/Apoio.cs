@@ -88,7 +88,7 @@ namespace WinAllApp.Core.Tests
                 var espera = segundos > 0 ? $"ping -n {segundos + 1} 127.0.0.1 >nul\r\n" : string.Empty;
                 File.WriteAllText(arquivo,
                     "@echo off\r\n" +
-                    $"echo {id} %*>> \"{log}\"\r\n" +
+                    $">> \"{log}\" echo {id} %*\r\n" + // redirecionamento antes do echo: "X=1>>" seria lido como handle 1
                     espera +
                     $"exit /b {codigoSaida}\r\n");
                 return new Programa { Id = id, Nome = id, Instalador = Path.GetFileName(arquivo), Tipo = "bat", Argumentos = argumentos };
