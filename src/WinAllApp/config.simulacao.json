@@ -5,15 +5,16 @@
       "id": "BL1",
       "nome": "Bloco 1 (BL1)",
       "laboratorios": [
-        { "id": "LCC", "nome": "LCC - Laboratório de Computação", "sala": "SIMULAÇÃO", "programas": [ "vscode", "python", "codeblocks" ] }
+        { "id": "MAT", "nome": "Matemática", "sala": "SIMULAÇÃO", "programas": [ "geogebra", "octave" ] },
+        { "id": "FALHAS", "nome": "Teste de falhas", "sala": "SIMULAÇÃO", "programas": [ "falha", "reinicio", "inexistente" ] }
       ]
     },
     {
       "id": "BL2",
       "nome": "Bloco 2 (BL2)",
       "laboratorios": [
-        { "id": "MAT", "nome": "Matemática", "sala": "SIMULAÇÃO", "programas": [ "geogebra", "octave" ] },
-        { "id": "FALHAS", "nome": "Teste de falhas", "sala": "SIMULAÇÃO", "programas": [ "falha", "reinicio", "inexistente" ] }
+        { "id": "LCC", "nome": "LCC", "sala": "SIMULAÇÃO", "programas": [ "vscode", "python", "codeblocks" ] },
+        { "id": "LAMEP", "nome": "LAMEP", "sala": "SIMULAÇÃO", "observacao": "Apenas os programas padrões (sem programas específicos no PDF).", "programas": [] }
       ]
     }
   ],

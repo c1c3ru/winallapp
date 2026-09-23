@@ -62,8 +62,12 @@ namespace WinAllApp.Core.Models
         [DataMember(Name = "sala", Order = 2)]
         public string Sala { get; set; }
 
+        /// <summary>Nota exibida na tela (ex.: "Apenas os programas padrões").</summary>
+        [DataMember(Name = "observacao", Order = 3)]
+        public string Observacao { get; set; }
+
         /// <summary>Ids dos programas (do catálogo) instalados nesta sala.</summary>
-        [DataMember(Name = "programas", Order = 3)]
+        [DataMember(Name = "programas", Order = 4)]
         public List<string> Programas { get; set; } = new List<string>();
 
         [OnDeserialized]
@@ -106,6 +110,10 @@ namespace WinAllApp.Core.Models
         /// <summary>Códigos de saída considerados sucesso. Padrão: 0, 1641 e 3010.</summary>
         [DataMember(Name = "codigosSucesso", Order = 7)]
         public List<int> CodigosSucesso { get; set; }
+
+        /// <summary>Nota para o técnico (ex.: parâmetro silencioso a confirmar), exibida abaixo do nome.</summary>
+        [DataMember(Name = "observacao", Order = 8)]
+        public string Observacao { get; set; }
 
         public override string ToString() => Nome ?? Id;
     }

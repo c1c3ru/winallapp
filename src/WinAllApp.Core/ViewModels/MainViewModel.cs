@@ -87,6 +87,22 @@ namespace WinAllApp.Core.ViewModels
                 OnPropertyChanged(nameof(Titulo));
                 OnPropertyChanged(nameof(Subtitulo));
                 OnPropertyChanged(nameof(TemLaboratorio));
+                OnPropertyChanged(nameof(MostrarAvisoVazio));
+                OnPropertyChanged(nameof(TextoAvisoVazio));
+            }
+        }
+
+        /// <summary>Verdadeiro quando não há lista para mostrar (nenhum laboratório ou laboratório sem programas específicos).</summary>
+        public bool MostrarAvisoVazio => Programas.Count == 0;
+
+        public string TextoAvisoVazio
+        {
+            get
+            {
+                if (LaboratorioSelecionado == null) return "Selecione um laboratório no menu à esquerda para ver os programas daquela sala.";
+                return string.IsNullOrWhiteSpace(LaboratorioSelecionado.Observacao)
+                    ? "Nenhum programa específico cadastrado para este laboratório."
+                    : LaboratorioSelecionado.Observacao;
             }
         }
 

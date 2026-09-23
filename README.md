@@ -12,7 +12,7 @@ Compatível do **Windows 7 SP1 ao Windows 11** (requer .NET Framework 4.8 instal
 2. Edite `config.json` (ao lado do `WinAllApp.exe`):
    - `pastaInstaladores`: pasta dos instaladores;
    - `programas`: catálogo com `id`, `nome`, `instalador`, `tipo` (`exe`, `msi`, `bat`) e `argumentos` silenciosos;
-   - `blocos[].laboratorios[].programas`: ids dos programas de cada sala.
+   - `blocos[].laboratorios[].programas`: ids dos programas de cada sala (já preenchido com os laboratórios dos PDFs BL1 e BL2).
 3. Execute `WinAllApp.exe` (pede permissão de administrador). Para usar outro arquivo: `WinAllApp.exe --config caminho\outro.json`.
 
 ### Testar sem instalar nada

@@ -20,6 +20,8 @@ namespace WinAllApp.Core.ViewModels
         public string Nome => Programa.Nome ?? Programa.Id;
         public string Versao => Programa.Versao;
         public string Detalhe => string.IsNullOrWhiteSpace(Programa.Versao) ? Programa.Instalador : $"v{Programa.Versao} · {Programa.Instalador}";
+        public string Observacao => Programa.Observacao;
+        public bool TemObservacao => !string.IsNullOrWhiteSpace(Programa.Observacao);
 
         public event EventHandler SelecaoAlterada;
 

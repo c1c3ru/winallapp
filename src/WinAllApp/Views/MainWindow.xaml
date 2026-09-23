@@ -146,20 +146,10 @@
 
       <Border Grid.Row="2" BorderBrush="{StaticResource CorBorda}" BorderThickness="1">
         <Grid>
-          <TextBlock Text="Selecione um laboratório no menu à esquerda para ver os programas daquela sala."
+          <TextBlock x:Name="TextoAvisoVazio" Text="{Binding TextoAvisoVazio}"
                      HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Margin="24"
-                     Foreground="{StaticResource CorTextoSecundario}">
-            <TextBlock.Style>
-              <Style TargetType="TextBlock">
-                <Setter Property="Visibility" Value="Collapsed" />
-                <Style.Triggers>
-                  <DataTrigger Binding="{Binding TemLaboratorio}" Value="False">
-                    <Setter Property="Visibility" Value="Visible" />
-                  </DataTrigger>
-                </Style.Triggers>
-              </Style>
-            </TextBlock.Style>
-          </TextBlock>
+                     TextAlignment="Center" Foreground="{StaticResource CorTextoSecundario}"
+                     Visibility="{Binding MostrarAvisoVazio, Converter={StaticResource BoolParaVisivel}}" />
 
           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <ItemsControl x:Name="ListaProgramas" ItemsSource="{Binding Programas}" IsEnabled="{Binding PodeNavegar}"
@@ -177,6 +167,9 @@
                           <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" TextWrapping="Wrap" />
                           <TextBlock Text="{Binding Detalhe}" FontSize="12" TextWrapping="Wrap"
                                      Foreground="{StaticResource CorTextoSecundario}" />
+                          <TextBlock Text="{Binding Observacao}" FontSize="12" TextWrapping="Wrap" FontStyle="Italic"
+                                     Foreground="#FF8A5A00"
+                                     Visibility="{Binding TemObservacao, Converter={StaticResource BoolParaVisivel}}" />
                         </StackPanel>
                       </CheckBox>
                       <TextBlock Grid.Column="1" Text="{Binding EstadoTexto}" Style="{StaticResource EstadoTexto}"
