@@ -1,0 +1,4 @@
+Instaladores FICTICIOS (.bat) usados pelo config.simulacao.json.
+Cada um so grava uma linha em instalacoes-simuladas.log (nome + parametros) e espera ~2 s.
+falha-setup.bat sai com codigo 1603 (erro) e reinicio-setup.bat com 3010 (sucesso, reiniciar).
+Para testar no Windows:  WinAllApp.exe --config config.simulacao.json

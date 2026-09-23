@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Lógica sem dependência de WPF: modelos, leitura do config.json, fila de instalação e ViewModels.
+       net48 é o alvo do aplicativo (Win 7 SP1 a Win 11); net8.0 permite rodar os testes em qualquer SO. -->
+  <PropertyGroup>
+    <TargetFrameworks>net48;net8.0</TargetFrameworks>
+    <RootNamespace>WinAllApp.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="System.Runtime.Serialization" />
+  </ItemGroup>
+</Project>

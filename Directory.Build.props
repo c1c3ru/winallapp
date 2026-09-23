@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!-- Permite compilar alvos Windows (net48/WPF) a partir de Linux/macOS -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Company>WinAllApp</Company>
+    <Product>WinAllApp - Instalação em Lote por Laboratório</Product>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <!-- Assemblies de referência do .NET Framework 4.8 (dispensa o Targeting Pack instalado) -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

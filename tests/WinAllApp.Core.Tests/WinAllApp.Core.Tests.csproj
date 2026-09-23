@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WinAllApp.Core\WinAllApp.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="TestData\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\WinAllApp\config.json" Link="TestData\app\config.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\WinAllApp\config.simulacao.json" Link="TestData\app\config.simulacao.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\mock-installers\*.bat" Link="TestData\app\mock-installers\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

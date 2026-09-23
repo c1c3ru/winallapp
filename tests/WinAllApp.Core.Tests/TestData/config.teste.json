@@ -1,0 +1,26 @@
+{
+  "pastaInstaladores": "instaladores",
+  "blocos": [
+    {
+      "id": "BL1",
+      "nome": "Bloco 1 (BL1)",
+      "laboratorios": [
+        { "id": "LCC", "nome": "LCC", "sala": "101", "programas": [ "vscode", "python", "codeblocks" ] }
+      ]
+    },
+    {
+      "id": "BL2",
+      "nome": "Bloco 2 (BL2)",
+      "laboratorios": [
+        { "id": "MAT", "nome": "Matemática", "sala": "201", "programas": [ "geogebra", "octave" ] }
+      ]
+    }
+  ],
+  "programas": [
+    { "id": "vscode", "nome": "Visual Studio Code", "instalador": "VSCodeSetup.exe", "tipo": "exe", "argumentos": "/VERYSILENT /NORESTART" },
+    { "id": "python", "nome": "Python", "instalador": "python-setup.exe", "argumentos": "/quiet InstallAllUsers=1" },
+    { "id": "codeblocks", "nome": "Code::Blocks", "instalador": "codeblocks-setup.exe", "argumentos": "/S" },
+    { "id": "geogebra", "nome": "GeoGebra", "instalador": "GeoGebra.msi" },
+    { "id": "octave", "nome": "GNU Octave", "instalador": "octave-setup.exe", "argumentos": "/S" }
+  ]
+}
