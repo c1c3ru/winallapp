@@ -12,6 +12,7 @@
 | 3 | Teste da tela WPF real (net48) + CI `windows-latest` (build, testes, capturas de tela). | Build Windows ok; 1 teste falhou no Windows |
 | 4 | Causa: nos `.bat` fictícios, `echo ... InstallAllUsers=1>> log` era lido pelo cmd como redirecionamento do handle `1` e cortava o argumento. Corrigido pondo o `>>` antes do `echo`. | **CI Windows 100% verde**: build, 28 testes da lógica (inclui simulação com `.bat` reais) e teste da tela WPF |
 | 5 | PDFs BL1/BL2 recebidos: `config.json` refeito com os 13 laboratórios reais e 69 programas; aviso na tela para laboratórios só com programas padrões; simulação reorganizada (LCC no BL2, Matemática no BL1). | Build 0 erros/0 avisos; 43 testes ok no Linux (+1 só Windows) |
+| 6 | Empacotamento em **executável único**: o código do Core é compilado dentro do `WinAllApp.exe`; tela, `config.json`, config de simulação e `.bat` fictícios vão embutidos; opções `--simulacao` e `--extrair-config`; CI publica a pré-versão `ultima-build` com o .exe. | Build 0 erros/0 avisos; saída = só `WinAllApp.exe` (~87 KB) |
 
 Tentativas falhadas no mesmo bug de compilação: **0 de 5** (nenhum erro de compilação em nenhum ciclo).
 
@@ -22,7 +23,8 @@ Tentativas falhadas no mesmo bug de compilação: **0 de 5** (nenhum erro de com
 - **WPF sobre .NET Framework 4.8** (`net48`), roda do **Windows 7 SP1 ao Windows 11**. O .NET 4.8 precisa estar instalado no Win 7 (já vem no Win 10 1903+ e no Win 11).
 - Solução `WinAllApp.sln`:
   - `src/WinAllApp.Core` (`net48;net8.0`): modelos, leitura/validação do `config.json`, filtro Bloco → Laboratório → Programas, fila de instalação assíncrona e ViewModels (MVVM). Sem dependência de WPF nem de pacotes externos (JSON via `DataContractJsonSerializer`, nativo do .NET).
-  - `src/WinAllApp` (`net48`, WinExe): ponto de entrada, `app.manifest` (pede administrador via UAC; declara Win 7/8/8.1/10/11) e a tela `Views/MainWindow.xaml`.
+  - `src/WinAllApp` (`net48`, WinExe): ponto de entrada, `app.manifest` (pede administrador via UAC; declara Win 7/8/8.1/10/11) e a tela `Views/MainWindow.xaml`. **Gera um único `WinAllApp.exe`**: compila junto o código do Core (sem DLL), embute a tela, o `config.json`, o `config.simulacao.json` e os `.bat` fictícios, e não gera `.exe.config` nem `.pdb` separado.
+  - Distribuição: pré-versão **`ultima-build`** nos Releases do GitHub, recriada pelo CI a cada push que passa nos testes.
   - `tests/WinAllApp.Core.Tests` (`net8.0`): roda em Linux e Windows.
   - `tests/WinAllApp.UI.Tests` (`net48`): abre a janela real; compila em qualquer SO, **executa só no Windows** (CI).
 - **Decisão técnica:** a tela é XAML "solto" embutido no `.exe` e carregado com `XamlReader.Load`, com toda a interação por bindings/comandos. Motivo: o SDK .NET no Linux não traz o compilador de marcação do WPF (`PresentationBuildTasks`), e o pacote NuGet antigo (3.0.0) quebra com caminhos Linux. Com isso a solução inteira compila no Linux e no Windows com o mesmo `dotnet build`, sem Visual Studio.

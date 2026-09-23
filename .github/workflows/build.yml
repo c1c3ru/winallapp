@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -35,8 +37,21 @@ jobs:
           path: capturas
           if-no-files-found: ignore
 
-      - name: Publicar executável
+      - name: Publicar executável (artefato)
         uses: actions/upload-artifact@v4
         with:
-          name: WinAllApp-net48
-          path: src/WinAllApp/bin/Release/net48
+          name: WinAllApp-exe
+          path: src/WinAllApp/bin/Release/net48/WinAllApp.exe
+
+      # Mantém a pré-versão "ultima-build" sempre com o WinAllApp.exe do último push que passou nos testes.
+      - name: Atualizar download "ultima-build"
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete ultima-build --cleanup-tag --yes || true
+          gh release create ultima-build src/WinAllApp/bin/Release/net48/WinAllApp.exe \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "WinAllApp - última build (${GITHUB_REF_NAME})" \
+            --notes "Executável único (.NET Framework 4.8, Windows 7 SP1 a 11), gerado automaticamente a partir do commit ${GITHUB_SHA::7}. Basta baixar e executar: o config.json com os laboratórios do BL1 e BL2 já vem embutido. Para testar sem instalar nada: WinAllApp.exe --simulacao"

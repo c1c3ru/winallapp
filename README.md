@@ -8,20 +8,29 @@ Compatível do **Windows 7 SP1 ao Windows 11** (requer .NET Framework 4.8 instal
 
 ## Como usar
 
-1. Coloque os instaladores numa pasta (local ou rede, ex.: `\\servidor\instaladores`).
-2. Edite `config.json` (ao lado do `WinAllApp.exe`):
-   - `pastaInstaladores`: pasta dos instaladores;
-   - `programas`: catálogo com `id`, `nome`, `instalador`, `tipo` (`exe`, `msi`, `bat`) e `argumentos` silenciosos;
-   - `blocos[].laboratorios[].programas`: ids dos programas de cada sala (já preenchido com os laboratórios dos PDFs BL1 e BL2).
-3. Execute `WinAllApp.exe` (pede permissão de administrador). Para usar outro arquivo: `WinAllApp.exe --config caminho\outro.json`.
+O aplicativo é **um único arquivo: `WinAllApp.exe`** (cerca de 90 KB, sem DLLs nem pastas extras).
+A lista de blocos, laboratórios e programas dos PDFs BL1/BL2 já vem embutida nele.
 
-### Testar sem instalar nada
+**Baixar:** na página de Releases do GitHub, pré-versão **`ultima-build`**, arquivo `WinAllApp.exe`
+(atualizada automaticamente a cada push que passa nos testes).
 
-```
-WinAllApp.exe --config config.simulacao.json
-```
+1. Copie o `WinAllApp.exe` para o pendrive ou para a máquina do laboratório.
+2. Dê dois cliques (o Windows pede permissão de administrador).
+3. Escolha o bloco, o laboratório, marque os programas e clique em **Instalar selecionados**.
 
-Usa os instaladores fictícios de `mock-installers\` (só registram nome e parâmetros em `instalacoes-simuladas.log`).
+Os instaladores são procurados na pasta definida em `pastaInstaladores` (padrão: `\\servidor\instaladores`).
+
+| Comando | O que faz |
+|---|---|
+| `WinAllApp.exe` | Usa o `config.json` ao lado do .exe; se não houver, usa o embutido |
+| `WinAllApp.exe --extrair-config` | Grava o `config.json` embutido ao lado do .exe para você editar (caminhos, parâmetros) |
+| `WinAllApp.exe --config outro.json` | Usa outro arquivo de configuração |
+| `WinAllApp.exe --simulacao` | Modo de teste: usa instaladores fictícios embutidos e não instala nada |
+
+### Editar a lista de programas
+
+No `config.json`: `pastaInstaladores`; `programas` (catálogo com `id`, `nome`, `instalador`, `tipo` `exe`/`msi`/`bat` e `argumentos` silenciosos);
+`blocos[].laboratorios[].programas` (ids de cada sala). Para mudar a lista embutida no próprio .exe, edite `src/WinAllApp/config.json` e recompile.
 
 ## Compilar
 
@@ -31,6 +40,6 @@ dotnet test tests/WinAllApp.Core.Tests          # qualquer SO
 dotnet test tests/WinAllApp.UI.Tests            # só Windows (abre a janela)
 ```
 
-Funciona com o SDK .NET 8 em Windows ou Linux (não precisa do Visual Studio). Saída: `src/WinAllApp/bin/Release/net48/`.
+Funciona com o SDK .NET 8 em Windows ou Linux (não precisa do Visual Studio). Saída: `src/WinAllApp/bin/Release/net48/WinAllApp.exe` (arquivo único).
 
 O andamento do projeto e as pendências estão em [`STATUS_INSTALLER.md`](STATUS_INSTALLER.md).

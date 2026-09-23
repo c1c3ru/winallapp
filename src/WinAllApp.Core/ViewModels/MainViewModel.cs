@@ -202,6 +202,9 @@ namespace WinAllApp.Core.ViewModels
             foreach (var aviso in avisos ?? Enumerable.Empty<string>()) AdicionarLog("Aviso: " + aviso);
         }
 
+        /// <summary>Acrescenta uma linha informativa ao registro (ex.: qual config foi carregado).</summary>
+        public void RegistrarMensagem(string mensagem) => AdicionarLog(mensagem);
+
         private void AplicarProgresso(InstallProgress p, Dictionary<Programa, ProgramaItemViewModel> porPrograma)
         {
             if (porPrograma.TryGetValue(p.Programa, out var item))
