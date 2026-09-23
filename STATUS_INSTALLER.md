@@ -9,9 +9,12 @@
 | 0 | Branch criada, repositório só tinha README. SDK .NET 8 instalado no container (Ubuntu). | — |
 | 1 | Biblioteca core, UI WPF, configs e mocks. Build Release da solução. | **0 erros, 0 avisos** |
 | 2 | Testes xUnit (lógica + fluxo do usuário + Process.Start real com mocks `.sh`). | 27 ok, 1 ignorado (só Windows), 1 bug de teste corrigido (código de saída POSIX tem 8 bits) |
-| 3 | Teste da tela WPF real (net48) + CI `windows-latest` (build, testes, capturas de tela). | ver secção 4 |
+| 3 | Teste da tela WPF real (net48) + CI `windows-latest` (build, testes, capturas de tela). | Build Windows ok; 1 teste falhou no Windows |
+| 4 | Causa: nos `.bat` fictícios, `echo ... InstallAllUsers=1>> log` era lido pelo cmd como redirecionamento do handle `1` e cortava o argumento. Corrigido pondo o `>>` antes do `echo`. | **CI Windows 100% verde**: build, 28 testes da lógica (inclui simulação com `.bat` reais) e teste da tela WPF |
 
-Tentativas falhadas no mesmo bug de compilação: **0 de 5**.
+Tentativas falhadas no mesmo bug de compilação: **0 de 5** (nenhum erro de compilação em nenhum ciclo).
+
+**Condição de parada atingida (ciclo 4):** compila para .NET Framework 4.8 sem erros, a UI filtra por Bloco → Laboratório com checkboxes e "Selecionar Todos do Laboratório", e a instalação assíncrona itera só os itens marcados (verificado no Linux e no Windows).
 
 ## 1) Arquitetura base concluída
 
@@ -51,7 +54,7 @@ Tentativas falhadas no mesmo bug de compilação: **0 de 5**.
   - `src/WinAllApp/config.simulacao.json` + `mock-installers/*.bat` — simulação sem instalar nada (LCC com 3, Matemática com 2 e um laboratório "Teste de falhas");
   - `tests/WinAllApp.Core.Tests/TestData/config.teste.json` — LCC (3 programas) e Matemática (2 programas).
 
-### QA executado (ciclo 2, Linux)
+### QA executado (ciclo 2 no Linux; ciclo 4 também no Windows via CI)
 
 - Filtro: LCC → 3 programas; Matemática → 2; laboratório de outro bloco não aparece.
 - Fluxo do usuário no ViewModel ligado à tela: bloco → laboratório → "Selecionar Todos" → desmarcar 1 → Instalar ⇒ o runner recebeu **só os 2 marcados**, com `/VERYSILENT /NORESTART` e `/S`; Matemática usa `msiexec /i ... /qn /norestart`.
@@ -62,5 +65,5 @@ Tentativas falhadas no mesmo bug de compilação: **0 de 5**.
 
 - **PDFs BL1 e BL2 não foram recebidos** (não estão no repositório nem anexados). Os laboratórios e programas do `config.json` são **exemplos** (sala marcada como `EXEMPLO`). Com os PDFs, basta preencher o `config.json` com os laboratórios e softwares reais.
 - **Parâmetros silenciosos reais** de AutoCAD, Proteus etc. variam por versão/licença e precisam ser confirmados com os instaladores reais (AutoCAD normalmente exige um pacote de *deployment* criado no Autodesk Account).
-- **A janela WPF não pode ser aberta no container Linux.** A lógica e o fluxo foram testados no Linux; a tela real é testada no CI Windows (`tests/WinAllApp.UI.Tests`). Resultado do CI: _pendente (atualizado após o push)_.
+- **A janela WPF não pode ser aberta no container Linux.** A lógica e o fluxo foram testados no Linux; a tela real é testada no CI Windows (`tests/WinAllApp.UI.Tests`): o teste abre a janela, escolhe BL2 → Matemática (2 checkboxes), BL1 → LCC (3 checkboxes), clica em "Selecionar Todos do Laboratório", desmarca o Python, clica em Instalar e confere que a janela seguiu responsiva e que só VS Code e Code::Blocks foram disparados com `/VERYSILENT /NORESTART` e `/S`. **Passou no CI.** As capturas da tela ficam no artefato `capturas-da-tela` de cada execução do Actions (o container não consegue baixá-las, então ainda não foram revisadas visualmente).
 - Win 7: nenhum problema de renderização encontrado até aqui, mas a validação visual em uma máquina Win 7 real ainda não foi feita.
