@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -35,8 +37,37 @@ jobs:
           path: capturas
           if-no-files-found: ignore
 
-      - name: Publicar executável
+      # Os artefatos do Actions nem sempre podem ser baixados; as capturas também vão para o branch "capturas-ci".
+      - name: Guardar capturas no branch capturas-ci
+        if: always() && github.event_name == 'push'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [ -d capturas ] || exit 0
+          cd capturas
+          git init -q -b capturas-ci
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "Capturas da tela do commit ${GITHUB_SHA::7} (${GITHUB_REF_NAME})"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" capturas-ci
+
+      - name: Publicar executável (artefato)
         uses: actions/upload-artifact@v4
         with:
-          name: WinAllApp-net48
-          path: src/WinAllApp/bin/Release/net48
+          name: WinAllApp-exe
+          path: src/WinAllApp/bin/Release/net48/WinAllApp.exe
+
+      # Mantém a pré-versão "ultima-build" sempre com o WinAllApp.exe do último push que passou nos testes.
+      - name: Atualizar download "ultima-build"
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete ultima-build --cleanup-tag --yes || true
+          gh release create ultima-build src/WinAllApp/bin/Release/net48/WinAllApp.exe \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "WinAllApp - última build (${GITHUB_REF_NAME})" \
+            --notes "Executável único e portátil (.NET Framework 4.8, Windows 7 SP1 a 11), gerado automaticamente a partir do commit ${GITHUB_SHA::7}. Copie para o pendrive ou para a pasta de rede e execute como Administrador: o config.json com os laboratórios do BL1 e BL2 já vem embutido e o tutorial abre na primeira execução. Para testar sem instalar nada: WinAllApp.exe --simulacao (ou --simulacao --simular-windows 7)."

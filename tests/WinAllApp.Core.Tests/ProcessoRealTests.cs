@@ -127,7 +127,7 @@ namespace WinAllApp.Core.Tests
             var pastaInstaladores = InstallCommandBuilder.ResolverPastaInstaladores(carga.Config, carga.PastaConfig);
             var vm = new MainViewModel(carga.Config, pastaInstaladores, new ProcessRunner());
 
-            vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL2");
+            vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL1");
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "FALHAS");
             vm.SelecionarTodosCommand.Execute(null);
             var resultados = await vm.InstalarAsync();
@@ -138,7 +138,7 @@ namespace WinAllApp.Core.Tests
             Assert.Equal(EstadoInstalacao.SucessoReiniciar, resultados[1].Estado); // exit 3010
             Assert.Equal(EstadoInstalacao.Falha, resultados[2].Estado);            // arquivo ausente
 
-            vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL1");
+            vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL2");
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "LCC");
             vm.SelecionarTodosCommand.Execute(null);
             resultados = await vm.InstalarAsync();

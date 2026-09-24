@@ -1,19 +1,23 @@
 {
   "pastaInstaladores": "mock-installers",
+  "pastaDestinoCopias": "destino-copias",
   "blocos": [
     {
       "id": "BL1",
       "nome": "Bloco 1 (BL1)",
       "laboratorios": [
-        { "id": "LCC", "nome": "LCC - Laboratório de Computação", "sala": "SIMULAÇÃO", "programas": [ "vscode", "python", "codeblocks" ] }
+        { "id": "MAT", "nome": "Matemática", "sala": "SIMULAÇÃO", "programas": [ "geogebra", "octave" ] },
+        { "id": "FALHAS", "nome": "Teste de falhas", "sala": "SIMULAÇÃO", "programas": [ "falha", "reinicio", "inexistente" ] },
+        { "id": "MOTOR", "nome": "Motor: 4 categorias", "sala": "SIMULAÇÃO", "programas": [ "mock-winget", "mock-licenciado", "mock-gratuito", "mock-copia" ] },
+        { "id": "WIN7", "nome": "Windows 7: versões novas", "sala": "SIMULAÇÃO", "programas": [ "mock-python", "mock-vs2022" ] }
       ]
     },
     {
       "id": "BL2",
       "nome": "Bloco 2 (BL2)",
       "laboratorios": [
-        { "id": "MAT", "nome": "Matemática", "sala": "SIMULAÇÃO", "programas": [ "geogebra", "octave" ] },
-        { "id": "FALHAS", "nome": "Teste de falhas", "sala": "SIMULAÇÃO", "programas": [ "falha", "reinicio", "inexistente" ] }
+        { "id": "LCC", "nome": "LCC", "sala": "SIMULAÇÃO", "programas": [ "vscode", "python", "codeblocks" ] },
+        { "id": "LAMEP", "nome": "LAMEP", "sala": "SIMULAÇÃO", "observacao": "Apenas os programas padrões (sem programas específicos no PDF).", "programas": [] }
       ]
     }
   ],
@@ -25,6 +29,12 @@
     { "id": "octave", "nome": "GNU Octave (fictício)", "versao": "0.0", "instalador": "octave-setup.bat", "tipo": "bat", "argumentos": "/S" },
     { "id": "falha", "nome": "Instalador que falha (código 1603)", "instalador": "falha-setup.bat", "tipo": "bat", "argumentos": "/S" },
     { "id": "reinicio", "nome": "Instalador que pede reinício (código 3010)", "instalador": "reinicio-setup.bat", "tipo": "bat", "argumentos": "/S" },
-    { "id": "inexistente", "nome": "Instalador ausente do disco", "instalador": "nao-existe.exe", "tipo": "exe", "argumentos": "/S" }
+    { "id": "inexistente", "nome": "Instalador ausente do disco", "instalador": "nao-existe.exe", "tipo": "exe", "argumentos": "/S" },
+    { "id": "mock-winget", "nome": "GeoGebra (gerenciador de pacotes)", "categoria": "gerenciador", "wingetId": "GeoGebra.Classic", "chocoId": "geogebra-classic", "observacao": "Sem instalador na rede: vai pelo winget (Win 10/11) ou pelo Chocolatey (Win 7)." },
+    { "id": "mock-licenciado", "nome": "AutoCAD (licenciado, fictício)", "categoria": "offline_licenciado", "instalador": "Pacote Licenciado\\setup-licenciado.bat", "tipo": "bat", "argumentos": "/qb /norestart", "observacao": "Instalador da pasta de rede; a ativação da licença é manual." },
+    { "id": "mock-gratuito", "nome": "GNU Octave 4.0 (gratuito, fictício)", "categoria": "offline_gratuito", "instalador": "octave-setup.bat", "tipo": "bat", "argumentos": "/S" },
+    { "id": "mock-copia", "nome": "Winplot (cópia de pasta, fictício)", "categoria": "copia_pasta", "instalador": "Portatil" },
+    { "id": "mock-python", "nome": "Python 3.13 (fictício)", "versao": "3.13", "categoria": "gerenciador", "wingetId": "Python.Python.3.13", "chocoId": "python3", "chocoVersao": "3.8.10", "windowsMinimo": "10" },
+    { "id": "mock-vs2022", "nome": "Visual Studio 2022 (fictício)", "versao": "2022", "categoria": "gerenciador", "wingetId": "Microsoft.VisualStudio.2022.Community", "windowsMinimo": "10" }
   ]
 }

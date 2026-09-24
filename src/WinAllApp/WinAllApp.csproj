@@ -9,6 +9,8 @@
     <RootNamespace>WinAllApp</RootNamespace>
     <AssemblyName>WinAllApp</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Ícone do .exe, da janela e da barra de tarefas: símbolo do IFCE -->
+    <ApplicationIcon>Imagens\ifce.ico</ApplicationIcon>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
@@ -20,14 +22,24 @@
     <Reference Include="System.Xaml" />
   </ItemGroup>
 
+  <!-- Executável único: o código do WinAllApp.Core é compilado dentro do .exe (sem DLL separada)
+       e o config.json, a tela e o modo simulação vão embutidos como recursos. -->
   <ItemGroup>
-    <EmbeddedResource Include="Views\*.xaml" LogicalName="WinAllApp.Views.%(Filename)%(Extension)" />
-    <None Include="config.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="config.simulacao.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\mock-installers\*.bat;..\..\mock-installers\*.txt" Link="mock-installers\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="..\WinAllApp.Core\**\*.cs" Exclude="..\WinAllApp.Core\obj\**;..\WinAllApp.Core\bin\**" Link="Core\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Reference Include="System.Runtime.Serialization" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WinAllApp.Core\WinAllApp.Core.csproj" />
+    <EmbeddedResource Include="Views\*.xaml" LogicalName="WinAllApp.Views.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Imagens\logo-ifce.png" LogicalName="WinAllApp.Imagens.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="config.json;config.simulacao.json" LogicalName="WinAllApp.Config.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\mock-installers\**\*.bat;..\..\mock-installers\**\*.txt" LogicalName="WinAllApp.Simulacao.%(RecursiveDir)%(Filename)%(Extension)" Link="mock-installers\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Sem WinAllApp.exe.config: o .NET 4.8 é usado por padrão. -->
+    <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
 </Project>

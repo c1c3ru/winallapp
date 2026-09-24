@@ -120,6 +120,96 @@ namespace WinAllApp.UI.Tests
             });
         }
 
+        [Fact]
+        public void Onboarding_TresPassosComLogo_FechaAoConcluir()
+        {
+            RodarEmSta(() =>
+            {
+                SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+                var preferencias = new PreferenciasUsuario(Path.Combine(Path.GetTempPath(), "winallapp-ui-" + Guid.NewGuid().ToString("N"), "p.ini"));
+                var vm = new OnboardingViewModel(@"\\servidor\instaladores", preferencias);
+                var janela = WindowFactory.CriarOnboarding(vm);
+                janela.ShowActivated = false;
+                janela.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                janela.Show();
+                try
+                {
+                    Processar();
+                    var logo = (Image)janela.FindName("ImagemLogo");
+                    var titulo = (TextBlock)janela.FindName("TextoTituloPasso");
+                    var texto = (TextBlock)janela.FindName("TextoPasso");
+                    var avancar = (Button)janela.FindName("BotaoAvancar");
+                    var voltar = (Button)janela.FindName("BotaoVoltar");
+
+                    Assert.NotNull(logo.Source);
+                    Assert.True(logo.ActualWidth > 0 && logo.ActualHeight > 0);
+                    Assert.Equal("1. Escolha o bloco e o laboratório", titulo.Text);
+                    Assert.False(voltar.IsEnabled);
+                    Assert.Equal("Avançar", avancar.Content);
+                    Assert.True(texto.ActualHeight > 0);
+                    Capturar(janela, "05-onboarding-passo1.png");
+
+                    avancar.Command.Execute(null);
+                    Processar();
+                    Assert.Equal("2. Confira a pasta de rede", titulo.Text);
+                    Assert.Contains(@"\\servidor\instaladores", texto.Text);
+                    Assert.True(voltar.IsEnabled);
+                    Capturar(janela, "06-onboarding-passo2.png");
+
+                    avancar.Command.Execute(null);
+                    Processar();
+                    Assert.Equal("3. Instale em lote", titulo.Text);
+                    Assert.Equal("Concluir", avancar.Content);
+                    Capturar(janela, "07-onboarding-passo3.png");
+
+                    avancar.Command.Execute(null);
+                    Processar();
+                    Assert.False(janela.IsVisible);
+                    Assert.True(preferencias.OnboardingConcluido);
+                }
+                finally
+                {
+                    if (janela.IsVisible) janela.Close();
+                }
+            });
+        }
+
+        [Fact]
+        public void TelaPrincipal_MostraLogoPastaDeRedeESistemaEAvisoDeWindows7()
+        {
+            RodarEmSta(() =>
+            {
+                SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+                var args = new[] { "--simulacao", "--simular-windows", "7" };
+                var carga = Program.CarregarConfig(args, out _);
+                var vm = Program.CriarViewModel(carga, Program.CriarAmbiente(args, true, carga.PastaConfig));
+                var janela = WindowFactory.CriarJanelaPrincipal(vm);
+                janela.ShowActivated = false;
+                janela.ShowInTaskbar = false;
+                janela.Show();
+                try
+                {
+                    vm.VerificarPastaRedeCommand.Execute(null);
+                    Processar(() => vm.PastaRedeAcessivel.HasValue, TimeSpan.FromSeconds(10));
+                    vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL1");
+                    vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "WIN7");
+                    Processar();
+
+                    Assert.NotNull(((Image)janela.FindName("ImagemLogo")).Source);
+                    Assert.True(vm.PastaRedeAcessivel == true, vm.PastaRedeStatus);
+                    Assert.StartsWith("Pasta de rede acessível", ((TextBlock)janela.FindName("TextoPastaRede")).Text);
+                    Assert.Contains("Windows 7", ((TextBlock)janela.FindName("TextoAmbiente")).Text);
+                    Assert.True(((Button)janela.FindName("BotaoTutorial")).IsEnabled);
+                    Assert.Contains(vm.Programas, p => p.TemAvisoCompatibilidade);
+                    Capturar(janela, "08-windows7-avisos.png");
+                }
+                finally
+                {
+                    janela.Close();
+                }
+            });
+        }
+
         private static void RodarEmSta(Action acao)
         {
             Exception erro = null;

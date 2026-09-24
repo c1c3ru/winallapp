@@ -1,0 +1,98 @@
+<!--
+  Tutorial de boas-vindas (3 passos). XAML "solto" como a tela principal: tudo ligado ao OnboardingViewModel.
+  Estático, sem animações; só controles nativos e cores sólidas (igual no Windows 7 e no 10/11).
+  A logo (ImagemLogo) é preenchida pelo WindowFactory a partir do recurso embutido.
+-->
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Bem-vindo ao WinAllApp"
+        Width="600" Height="470" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        FontFamily="Segoe UI" FontSize="13"
+        Background="#FFFFFFFF"
+        TextOptions.TextFormattingMode="Display">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="BoolParaVisivel" />
+    <SolidColorBrush x:Key="CorPrimaria" Color="#FF2F8A3F" />
+    <SolidColorBrush x:Key="CorBorda" Color="#FFD5DBE3" />
+    <SolidColorBrush x:Key="CorTextoSecundario" Color="#FF5B6573" />
+
+    <Style x:Key="Botao" TargetType="Button">
+      <Setter Property="Padding" Value="14,6" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="MinWidth" Value="96" />
+      <Setter Property="Margin" Value="8,0,0,0" />
+    </Style>
+
+    <!-- Ícone de cada passo: 1 laboratório, 2 pasta de rede, 3 instalar -->
+    <Style x:Key="IconePasso" TargetType="Path">
+      <Setter Property="Stroke" Value="#FFFFFFFF" />
+      <Setter Property="StrokeThickness" Value="2" />
+      <Setter Property="StrokeLineJoin" Value="Round" />
+      <Setter Property="StrokeStartLineCap" Value="Round" />
+      <Setter Property="StrokeEndLineCap" Value="Round" />
+      <Setter Property="Width" Value="40" />
+      <Setter Property="Height" Value="40" />
+      <Setter Property="Stretch" Value="Uniform" />
+      <Setter Property="Data" Value="M3,21 L3,9 L12,3 L21,9 L21,21 Z M7,21 L7,13 L11,13 L11,21 M14,13 L18,13 L18,17 L14,17 Z" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding PassoAtual.Numero}" Value="2">
+          <Setter Property="Data" Value="M2,5 L9,5 L11,7 L22,7 L22,17 L2,17 Z M12,17 L12,21 M5,21 L19,21" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding PassoAtual.Numero}" Value="3">
+          <Setter Property="Data" Value="M12,2 L12,15 M6,10 L12,16 L18,10 M3,21 L21,21" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+  </Window.Resources>
+
+  <DockPanel>
+    <!-- Cabeçalho com a logo do IFCE -->
+    <Border DockPanel.Dock="Top" BorderBrush="{StaticResource CorPrimaria}" BorderThickness="0,0,0,3" Padding="24,16">
+      <DockPanel>
+        <Image x:Name="ImagemLogo" DockPanel.Dock="Left" Width="64" Height="64" Margin="0,0,16,0" />
+        <TextBlock DockPanel.Dock="Right" Text="{Binding Progresso}" VerticalAlignment="Top"
+                   Foreground="{StaticResource CorTextoSecundario}" x:Name="TextoProgresso" />
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="Bem-vindo ao WinAllApp" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource CorPrimaria}" />
+          <TextBlock Text="Instalação em lote por laboratório · IFCE Campus Maracanaú" Foreground="{StaticResource CorTextoSecundario}" TextWrapping="Wrap" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- Rodapé: não mostrar novamente + navegação -->
+    <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource CorBorda}" BorderThickness="0,1,0,0" Padding="24,12">
+      <DockPanel>
+        <CheckBox x:Name="CaixaNaoMostrar" DockPanel.Dock="Left" VerticalAlignment="Center"
+                  Content="Não mostrar novamente" IsChecked="{Binding NaoMostrarNovamente}" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+          <Button x:Name="BotaoPular" Content="Pular" Style="{StaticResource Botao}" Command="{Binding PularCommand}" IsCancel="True" />
+          <Button x:Name="BotaoVoltar" Content="Voltar" Style="{StaticResource Botao}" Command="{Binding VoltarCommand}" />
+          <Button x:Name="BotaoAvancar" Content="{Binding TextoAvancar}" Style="{StaticResource Botao}" FontWeight="SemiBold"
+                  Command="{Binding AvancarCommand}" IsDefault="True" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- Passo atual -->
+    <Grid Margin="24,22,24,12">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <Grid Width="76" Height="76" VerticalAlignment="Top" Margin="0,0,20,0">
+        <Ellipse Fill="{StaticResource CorPrimaria}" />
+        <Path Style="{StaticResource IconePasso}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+      </Grid>
+      <StackPanel Grid.Column="1">
+        <TextBlock x:Name="TextoTituloPasso" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,10">
+          <Run Text="{Binding PassoAtual.Numero, Mode=OneWay}" /><Run Text=". " /><Run Text="{Binding PassoAtual.Titulo, Mode=OneWay}" />
+        </TextBlock>
+        <TextBlock x:Name="TextoPasso" Text="{Binding PassoAtual.Texto}" TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,14" />
+        <Border Background="#FFF1F7F2" BorderBrush="#FFCFE5D3" BorderThickness="1" Padding="12,8">
+          <TextBlock Text="{Binding PassoAtual.Dica}" TextWrapping="Wrap" Foreground="{StaticResource CorTextoSecundario}" FontStyle="Italic" />
+        </Border>
+      </StackPanel>
+    </Grid>
+  </DockPanel>
+</Window>
