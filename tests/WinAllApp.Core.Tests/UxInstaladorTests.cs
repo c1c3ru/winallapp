@@ -118,6 +118,35 @@ namespace WinAllApp.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Contexto que roda cada Post em paralelo no pool (como o do xUnit): os avisos ainda têm de ser aplicados um de
+        /// cada vez e em ordem, senão o Registro corrompe e um "Instalando" atrasado sobrescreve o "Instalado".
+        /// </summary>
+        [Fact]
+        public void ContextoQueRodaPostsEmParalelo_AvisosSaemEmOrdemEOContadorFecha()
+        {
+            for (var rodada = 0; rodada < 40; rodada++)
+            {
+                SynchronizationContext.SetSynchronizationContext(null);
+                var (vm, _, _) = Criar();
+                vm.SelecionarTodosCommand.Execute(null);
+                SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+                try
+                {
+                    vm.InstalarAsync().GetAwaiter().GetResult();
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(null);
+                }
+
+                Assert.All(vm.Programas, p => Assert.Equal(EstadoInstalacao.Sucesso, p.Estado));
+                Assert.Equal("3 de 3 concluído(s) · 3 instalado(s) · 0 falha(s)", vm.ContadorTexto);
+                Assert.DoesNotContain(null, vm.Log);
+                Assert.Equal(1 + 3 * 2 + 1, vm.Log.Count); // início + (executando, instalado) x3 + resumo
+            }
+        }
+
         // ===== 2) Pasta de rede =====
 
         [Fact]
@@ -125,7 +154,7 @@ namespace WinAllApp.Core.Tests
         {
             var carga = ConfigLoader.CarregarArquivo(Path.Combine(Dados.Pasta, "app", "config.json"));
             Assert.Equal(ContextoInstalacao.PastaRedePadrao, carga.Config.PastaInstaladores);
-            Assert.Equal(@"\\10.50.11.2\informatica\NAC - Núcleo de Atendimento ao Cliente\ no windows\Programas\Laboratórios - Programas",
+            Assert.Equal(@"\\10.50.11.2\informatica\NAC - Núcleo de Atendimento ao Cliente\Programas\Laboratórios - Programas",
                 ContextoInstalacao.PastaRedePadrao);
 
             var fila = new InstallQueue(new RunnerFalso(), new CopiadorPastas(),

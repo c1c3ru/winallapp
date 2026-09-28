@@ -127,7 +127,7 @@ namespace WinAllApp.UI.Tests
             Assert.Equal(@"/i ""\\servidor\instaladores\Google Earth\earth.msi"" /qn /norestart", msi.Argumentos);
         }
 
-        /// <summary>O caminho padrão do campus (espaços, acentos e a pasta " no windows") chega intacto e entre aspas ao Process.Start.</summary>
+        /// <summary>O caminho padrão do campus (espaços e acentos) chega intacto e entre aspas ao Process.Start.</summary>
         [Fact]
         public void CaminhoPadraoDoCampus_ChegaAoProcessStartEntreAspas()
         {
