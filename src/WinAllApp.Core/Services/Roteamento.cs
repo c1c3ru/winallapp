@@ -116,8 +116,15 @@ namespace WinAllApp.Core.Services
 
         public const string PastaDestinoCopiasPadrao = @"C:\Programas";
 
-        /// <summary>Fonte primária: a pasta de rede (\\servidor\instaladores) com os instaladores e pastas.</summary>
-        public string PastaInstaladores { get; }
+        /// <summary>Pasta de rede do campus com os instaladores dos laboratórios (padrão do config.json).</summary>
+        public const string PastaRedePadrao =
+            @"\\10.50.11.2\informatica\NAC - Núcleo de Atendimento ao Cliente\ no windows\Programas\Laboratórios - Programas";
+
+        /// <summary>
+        /// Fonte primária: a pasta de rede com os instaladores e pastas. Pode ser trocada na tela (campo "Pasta de rede")
+        /// antes de instalar; vale para os próximos planos.
+        /// </summary>
+        public string PastaInstaladores { get; set; }
         public string PastaDestinoCopias { get; }
         public AmbienteSistema Ambiente { get; }
         public Func<string, bool> ArquivoExiste { get; set; } = File.Exists;

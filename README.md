@@ -17,7 +17,7 @@ instala tudo em fila, de forma silenciosa, sem travar a janela.
 |---|---|---|
 | **.NET Framework 4.8** | Instalar (download gratuito da Microsoft) | Já vem no sistema |
 | **Conta de Administrador** | Obrigatória | Obrigatória |
-| **Acesso à pasta de rede** (`\\servidor\instaladores`) | Obrigatório | Obrigatório |
+| **Acesso à pasta de rede** (padrão `\\10.50.11.2\informatica\NAC - Núcleo de Atendimento ao Cliente\ no windows\Programas\Laboratórios - Programas`) | Obrigatório | Obrigatório |
 | winget | Não existe no Windows 7/8.1 | Opcional (App "Instalador de Aplicativo") |
 | Chocolatey | Opcional. Exige **.NET 4.8** e **TLS 1.2 ativado** (atualização KB3140245 + registro) | Não é usado |
 
@@ -37,11 +37,17 @@ Ela é atualizada automaticamente a cada alteração que passa em todos os teste
      e informe a conta de administrador.
 3. Na primeira vez, o **tutorial** abre sozinho:
    1. **Escolha o bloco e o laboratório** no menu à esquerda.
-   2. **Confira a pasta de rede**: o menu mostra "Pasta de rede acessível" (verde) ou "INACESSÍVEL" (vermelho).
-      Se estiver inacessível, conecte a máquina à rede do campus e clique em **Verificar rede**.
+   2. **Confira a pasta de rede**: o campo **Pasta de rede** (no topo) já vem com o caminho do campus e pode ser editado.
+      Clique em **Verificar**: aparece "Pasta de rede acessível" (verde) ou "INACESSÍVEL" com um alerta vermelho.
+      A verificação roda em segundo plano (spinner ao lado do campo), sem travar a janela.
    3. **Instale em lote**: marque os programas (ou **Selecionar Todos do Laboratório**) e clique em **Instalar selecionados**.
-4. Acompanhe cada item na lista (Instalando…, Instalado, Falhou, Incompatível com o SO…) e o **Registro da instalação** no rodapé.
-5. Programas **licenciados** (AutoCAD, MATLAB, Proteus…) ficam como "Instalado (ativar licença)": a ativação é feita depois, à mão.
+4. Use a **barra de pesquisa** para achar um programa pelo nome, versão ou categoria. O filtro é imediato e os itens
+   marcados continuam marcados mesmo quando somem da lista. Com a pesquisa ativa, o botão vira **Selecionar os exibidos**.
+5. Durante a instalação um **spinner** gira no rodapé e na linha em andamento, e o **contador** mostra
+   "concluídos de total · instalados · falhas". A janela continua respondendo.
+6. Se algo falhar, a linha fica vermelha com o **motivo**, e uma faixa vermelha no topo lista os programas que falharam.
+   O **Registro da instalação** no rodapé guarda todos os detalhes.
+7. Programas **licenciados** (AutoCAD, MATLAB, Proteus…) ficam como "Instalado (ativar licença)": a ativação é feita depois, à mão.
 
 Marque **Não mostrar novamente** no tutorial para ele não abrir nas próximas vezes. A preferência fica em
 `%APPDATA%\WinAllApp\preferencias.ini` (nada é gravado ao lado do .exe).
@@ -84,7 +90,7 @@ Estrutura:
 
 ```json
 {
-  "pastaInstaladores": "\\\\servidor\\instaladores",
+  "pastaInstaladores": "\\\\10.50.11.2\\informatica\\NAC - Núcleo de Atendimento ao Cliente\\ no windows\\Programas\\Laboratórios - Programas",
   "pastaDestinoCopias": "C:\\Programas",
   "blocos": [
     {
@@ -99,7 +105,8 @@ Estrutura:
 }
 ```
 
-- `pastaInstaladores`: pasta de rede com os instaladores (UNC, absoluta ou relativa ao config).
+- `pastaInstaladores`: pasta de rede com os instaladores (UNC, absoluta ou relativa ao config). É o valor inicial do campo
+  **Pasta de rede** da tela, que pode ser trocado antes de instalar. Caminhos com espaços funcionam (vão entre aspas no disparo).
 - `pastaDestinoCopias`: onde ficam os programas copiados (`copia_pasta`). Aceita `%VARIAVEIS%`.
 - `blocos[].laboratorios[].programas`: ids dos programas de cada sala (o mesmo programa pode estar em várias salas).
 - Nas barras invertidas do JSON, use `\\` (ex.: `"AutoCAD2018\\Setup.exe"`).

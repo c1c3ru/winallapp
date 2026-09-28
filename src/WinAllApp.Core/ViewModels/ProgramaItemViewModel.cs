@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.Text;
 using WinAllApp.Core.Models;
 using WinAllApp.Core.Services;
 
@@ -60,8 +62,41 @@ namespace WinAllApp.Core.ViewModels
             get => _estado;
             set
             {
-                if (Set(ref _estado, value)) OnPropertyChanged(nameof(EstadoTexto));
+                if (!Set(ref _estado, value)) return;
+                OnPropertyChanged(nameof(EstadoTexto));
+                OnPropertyChanged(nameof(TemFalha));
+                OnPropertyChanged(nameof(Concluido));
+                OnPropertyChanged(nameof(MostrarMensagemErro));
             }
+        }
+
+        /// <summary>Falhou: a linha ganha o ícone e o texto vermelhos com o motivo.</summary>
+        public bool TemFalha => Estado == EstadoInstalacao.Falha;
+
+        /// <summary>Já saiu da fila (instalado, falhou, cancelado ou incompatível).</summary>
+        public bool Concluido => Estado != EstadoInstalacao.Pendente && Estado != EstadoInstalacao.Instalando;
+
+        public bool MostrarMensagemErro => TemFalha && !string.IsNullOrWhiteSpace(Mensagem);
+
+        /// <summary>Verdadeiro quando o nome, o id, a versão ou a categoria contêm o texto (sem diferenciar maiúsculas e acentos).</summary>
+        public bool Corresponde(string pesquisa)
+        {
+            if (string.IsNullOrWhiteSpace(pesquisa)) return true;
+            var termo = pesquisa.Trim();
+            return Contem(Nome, termo) || Contem(Programa.Id, termo) || Contem(Programa.Versao, termo) || Contem(CategoriaTexto, termo);
+        }
+
+        private static bool Contem(string texto, string termo) =>
+            !string.IsNullOrEmpty(texto) && SemAcentos(texto).IndexOf(SemAcentos(termo), StringComparison.OrdinalIgnoreCase) >= 0;
+
+        /// <summary>"Lógica" → "Logica": a pesquisa não depende de acento (igual no .NET 4.8 e nos testes).</summary>
+        public static string SemAcentos(string texto)
+        {
+            var decomposto = (texto ?? string.Empty).Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder(decomposto.Length);
+            foreach (var c in decomposto)
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) sb.Append(c);
+            return sb.ToString().Normalize(NormalizationForm.FormC);
         }
 
         /// <summary>Texto curto exibido na coluna de estado.</summary>
@@ -87,7 +122,10 @@ namespace WinAllApp.Core.ViewModels
         public string Mensagem
         {
             get => _mensagem;
-            set => Set(ref _mensagem, value);
+            set
+            {
+                if (Set(ref _mensagem, value)) OnPropertyChanged(nameof(MostrarMensagemErro));
+            }
         }
     }
 }

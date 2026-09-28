@@ -99,6 +99,7 @@ namespace WinAllApp.UI.Tests
                     Processar();
                     Assert.True(vm.Ocupado);
                     Assert.False(listaProgramas.IsEnabled);
+                    Assert.True(((FrameworkElement)janela.FindName("SpinnerInstalacao")).IsVisible);
                     Capturar(janela, "03-instalando.png");
 
                     Processar(() => !vm.Ocupado, TimeSpan.FromSeconds(20));
@@ -111,6 +112,8 @@ namespace WinAllApp.UI.Tests
                     Assert.EndsWith("codeblocks-setup.exe", comandos[1].Arquivo);
                     Assert.Equal("/S", comandos[1].Argumentos);
                     Assert.Equal(EstadoInstalacao.SucessoReiniciar, vm.Programas[2].Estado);
+                    Assert.False(((FrameworkElement)janela.FindName("SpinnerInstalacao")).IsVisible);
+                    Assert.Equal("2 de 2 concluído(s) · 2 instalado(s) · 0 falha(s)", ((TextBlock)janela.FindName("TextoContador")).Text);
                     Capturar(janela, "04-concluido.png");
                 }
                 finally
@@ -208,6 +211,118 @@ namespace WinAllApp.UI.Tests
                     janela.Close();
                 }
             });
+        }
+
+        /// <summary>
+        /// Igual ao .exe: o ViewModel nasce SEM contexto de UI (Program.Main cria antes de app.Run) e o contexto do WPF
+        /// só existe depois. Confere o campo de rede, a pesquisa (sem perder a marcação), o spinner, o contador e os
+        /// alertas vermelhos de uma falha, tudo com a janela respondendo.
+        /// </summary>
+        [Fact]
+        public void Usuario_PesquisaInstalaComFalhaEVeOContadorEOAlerta()
+        {
+            RodarEmSta(() =>
+            {
+                SynchronizationContext.SetSynchronizationContext(null);
+                var carga = ConfigLoader.CarregarArquivo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestData", "config.teste.json"));
+                var runner = new RunnerComFalha();
+                var fila = new InstallQueue(runner, ContextoInstalacao.PastaRedePadrao) { VerificarArquivoExiste = false };
+                var vm = new MainViewModel(new LabCatalog(carga.Config), fila);
+                SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+
+                var janela = WindowFactory.CriarJanelaPrincipal(vm);
+                janela.ShowActivated = false;
+                janela.ShowInTaskbar = false;
+                janela.Show();
+                try
+                {
+                    var campoRede = (TextBox)janela.FindName("CampoPastaRede");
+                    var pesquisa = (TextBox)janela.FindName("CampoPesquisa");
+                    var listaProgramas = (ItemsControl)janela.FindName("ListaProgramas");
+                    var faixaErro = (FrameworkElement)janela.FindName("FaixaErro");
+                    var spinnerRede = (FrameworkElement)janela.FindName("SpinnerRede");
+
+                    // Campo de rede com o caminho do campus (espaços e acentos preservados).
+                    Assert.Equal(ContextoInstalacao.PastaRedePadrao, campoRede.Text);
+
+                    // Verificar a rede roda em segundo plano: spinner girando e a janela processando mensagens.
+                    fila.Roteador.Contexto.PastaExiste = _ => { Thread.Sleep(1500); return false; };
+                    ((Button)janela.FindName("BotaoVerificarRede")).Command.Execute(null);
+                    Processar();
+                    Assert.True(spinnerRede.IsVisible);
+                    Processar(() => vm.PastaRedeAcessivel.HasValue, TimeSpan.FromSeconds(10));
+                    Assert.False(spinnerRede.IsVisible);
+                    Assert.True(faixaErro.IsVisible);
+                    Assert.Contains("Não foi possível acessar a pasta de rede", ((TextBlock)janela.FindName("TextoErro")).Text);
+                    Assert.StartsWith("Pasta de rede INACESSÍVEL", ((TextBlock)janela.FindName("TextoPastaRede")).Text);
+                    Capturar(janela, "09-rede-inacessivel.png");
+
+                    // Editar o campo vale para a instalação.
+                    campoRede.Text = @"\\10.50.11.2\informatica\Outra Pasta";
+                    Processar();
+                    Assert.Equal(@"\\10.50.11.2\informatica\Outra Pasta", fila.Roteador.Contexto.PastaInstaladores);
+                    Assert.False(faixaErro.IsVisible);
+                    campoRede.Text = ContextoInstalacao.PastaRedePadrao;
+
+                    vm.BlocoSelecionado = vm.Blocos[0];
+                    vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "LCC");
+                    Processar();
+
+                    // Marca o Python, filtra por "code": ele some da lista mas continua marcado.
+                    CheckBoxes(listaProgramas).Single(c => Rotulo(c) == "Python").IsChecked = true;
+                    pesquisa.Text = "code";
+                    Processar();
+                    Assert.Equal(new[] { "Visual Studio Code", "Code::Blocks" }, CheckBoxes(listaProgramas).Select(Rotulo));
+                    Assert.Equal("Selecionar os exibidos", ((Button)janela.FindName("BotaoSelecionarTodos")).Content);
+                    ((Button)janela.FindName("BotaoSelecionarTodos")).Command.Execute(null);
+                    Processar();
+                    Assert.Equal(3, vm.TotalSelecionados);
+                    Capturar(janela, "10-pesquisa.png");
+
+                    pesquisa.Text = "pyth";
+                    Processar();
+                    Assert.True(Assert.Single(CheckBoxes(listaProgramas)).IsChecked == true);
+                    ((Button)janela.FindName("BotaoLimparPesquisa")).Command.Execute(null);
+                    Processar();
+                    Assert.Equal(string.Empty, pesquisa.Text);
+                    Assert.All(CheckBoxes(listaProgramas), c => Assert.True(c.IsChecked == true));
+
+                    // Instalar: spinner no rodapé e na linha em andamento; contador avança; VS Code falha.
+                    ((Button)janela.FindName("BotaoInstalar")).Command.Execute(null);
+                    Processar(() => vm.Concluidos >= 1, TimeSpan.FromSeconds(10));
+                    Assert.True(vm.Ocupado);
+                    Assert.True(((FrameworkElement)janela.FindName("SpinnerInstalacao")).IsVisible);
+                    Assert.Contains(" de 3 concluído(s)", ((TextBlock)janela.FindName("TextoContador")).Text);
+                    Capturar(janela, "11-instalando-spinner.png");
+
+                    Processar(() => !vm.Ocupado, TimeSpan.FromSeconds(30));
+                    Assert.False(vm.Ocupado);
+                    Assert.Equal("3 de 3 concluído(s) · 2 instalado(s) · 1 falha(s)", ((TextBlock)janela.FindName("TextoContador")).Text);
+                    Assert.True(faixaErro.IsVisible);
+                    Assert.Contains("1 programa(s) falharam: Visual Studio Code", ((TextBlock)janela.FindName("TextoErro")).Text);
+                    Assert.True(vm.Programas[0].TemFalha);
+                    Assert.DoesNotContain(vm.Log, l => l.Contains("Erro inesperado"));
+                    Assert.Equal(3, runner.Comandos.Count);
+                    Assert.All(runner.Comandos, c => Assert.StartsWith(ContextoInstalacao.PastaRedePadrao, c.CaminhoInstalador));
+                    Capturar(janela, "12-falha-alerta.png");
+                }
+                finally
+                {
+                    janela.Close();
+                }
+            });
+        }
+
+        private sealed class RunnerComFalha : IProcessRunner
+        {
+            public ConcurrentQueue<InstallCommand> Comandos { get; } = new ConcurrentQueue<InstallCommand>();
+
+            public async Task<int> ExecutarAsync(InstallCommand comando, TimeSpan timeout, CancellationToken cancelamento)
+            {
+                Comandos.Enqueue(comando);
+                await Task.Delay(1200, cancelamento).ConfigureAwait(false);
+                return comando.Arquivo.EndsWith("VSCodeSetup.exe", StringComparison.OrdinalIgnoreCase) ? 1603 : 0;
+            }
         }
 
         private static void RodarEmSta(Action acao)
