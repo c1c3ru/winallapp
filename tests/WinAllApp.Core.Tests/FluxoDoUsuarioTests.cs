@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using WinAllApp.Core.Services;
 using WinAllApp.Core.ViewModels;
@@ -19,6 +20,7 @@ namespace WinAllApp.Core.Tests
             var carga = Dados.CarregarConfigTeste();
             runner = runner ?? new RunnerFalso();
             var fila = new InstallQueue(runner, Path.Combine(carga.PastaConfig, "instaladores")) { VerificarArquivoExiste = false };
+            SynchronizationContext.SetSynchronizationContext(null);
             return (new MainViewModel(new LabCatalog(carga.Config), fila), runner);
         }
 
@@ -44,6 +46,7 @@ namespace WinAllApp.Core.Tests
             vm.BlocoSelecionado = vm.Blocos[0];
 
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "LCC");
+            vm.AguardarAutodescoberta();
 
             Assert.Equal(new[] { "Visual Studio Code", "Python", "Code::Blocks" }, vm.Programas.Select(p => p.Nome));
             Assert.All(vm.Programas, p => Assert.False(p.Selecionado));
@@ -57,10 +60,12 @@ namespace WinAllApp.Core.Tests
             var (vm, _) = Criar();
             vm.BlocoSelecionado = vm.Blocos[0];
             vm.LaboratorioSelecionado = vm.Laboratorios[0];
+            vm.AguardarAutodescoberta();
             vm.SelecionarTodosCommand.Execute(null);
 
             vm.BlocoSelecionado = vm.Blocos[1];
             vm.LaboratorioSelecionado = vm.Laboratorios[0];
+            vm.AguardarAutodescoberta();
 
             Assert.Equal(new[] { "GeoGebra", "GNU Octave" }, vm.Programas.Select(p => p.Nome));
             Assert.Equal(0, vm.TotalSelecionados);
@@ -72,6 +77,7 @@ namespace WinAllApp.Core.Tests
             var (vm, _) = Criar();
             vm.BlocoSelecionado = vm.Blocos[0];
             vm.LaboratorioSelecionado = vm.Laboratorios[0];
+            vm.AguardarAutodescoberta();
 
             vm.SelecionarTodosCommand.Execute(null);
             Assert.Equal(3, vm.TotalSelecionados);
@@ -89,6 +95,7 @@ namespace WinAllApp.Core.Tests
             var (vm, runner) = Criar();
             vm.BlocoSelecionado = vm.Blocos[0];
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "LCC");
+            vm.AguardarAutodescoberta();
             vm.SelecionarTodosCommand.Execute(null);
             vm.Programas.Single(p => p.Programa.Id == "python").Selecionado = false; // usuário desmarca um
 
@@ -115,6 +122,7 @@ namespace WinAllApp.Core.Tests
             var (vm, runner) = Criar();
             vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL2");
             vm.LaboratorioSelecionado = vm.Laboratorios.Single();
+            vm.AguardarAutodescoberta();
             vm.SelecionarTodosCommand.Execute(null);
 
             await vm.InstalarAsync();
@@ -133,6 +141,7 @@ namespace WinAllApp.Core.Tests
             var (vm, _) = Criar(runner);
             vm.BlocoSelecionado = vm.Blocos[0];
             vm.LaboratorioSelecionado = vm.Laboratorios[0];
+            vm.AguardarAutodescoberta();
             vm.Programas[0].Selecionado = true;
 
             var tarefa = vm.InstalarAsync();
@@ -164,6 +173,7 @@ namespace WinAllApp.Core.Tests
             var (vm, _) = Criar(runner);
             vm.BlocoSelecionado = vm.Blocos[0];
             vm.LaboratorioSelecionado = vm.Laboratorios[0];
+            vm.AguardarAutodescoberta();
             vm.SelecionarTodosCommand.Execute(null);
 
             var tarefa = vm.InstalarAsync();
@@ -186,6 +196,7 @@ namespace WinAllApp.Core.Tests
             var (vm, _) = Criar(runner);
             vm.BlocoSelecionado = vm.Blocos[0];
             vm.LaboratorioSelecionado = vm.Laboratorios[0];
+            vm.AguardarAutodescoberta();
             vm.SelecionarTodosCommand.Execute(null);
 
             await vm.InstalarAsync();

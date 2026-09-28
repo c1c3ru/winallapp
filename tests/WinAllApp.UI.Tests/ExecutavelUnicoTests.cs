@@ -47,9 +47,11 @@ namespace WinAllApp.UI.Tests
             Assert.Contains("\r\n", File.ReadAllText(Path.Combine(mocks, "vscode-setup.bat")));
 
             var pastaInstaladores = InstallCommandBuilder.ResolverPastaInstaladores(carga.Config, carga.PastaConfig);
+            SynchronizationContext.SetSynchronizationContext(null); // vereditos da autodescoberta aplicados direto
             var vm = new MainViewModel(carga.Config, pastaInstaladores, new ProcessRunner());
             vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL2");
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "LCC");
+            AguardarAutodescoberta(vm);
             vm.SelecionarTodosCommand.Execute(null);
             vm.Programas.Single(p => p.Programa.Id == "python").Selecionado = false;
 
@@ -75,10 +77,12 @@ namespace WinAllApp.UI.Tests
             var carga = Program.CarregarConfig(args, out _);
             Assert.True(carga.Valido, string.Join("; ", carga.Erros));
             var ambiente = Program.CriarAmbiente(args, simulacao: true, pastaConfig: carga.PastaConfig);
+            SynchronizationContext.SetSynchronizationContext(null); // vereditos da autodescoberta aplicados direto
             var vm = Program.CriarViewModel(carga, ambiente);
 
             vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL1");
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "MOTOR");
+            AguardarAutodescoberta(vm);
             vm.SelecionarTodosCommand.Execute(null);
             var resultados = await vm.InstalarAsync();
 
@@ -99,10 +103,12 @@ namespace WinAllApp.UI.Tests
         {
             var args = new[] { "--simulacao", "--simular-windows", "7", "--sem-tls12" };
             var carga = Program.CarregarConfig(args, out _);
+            SynchronizationContext.SetSynchronizationContext(null); // vereditos da autodescoberta aplicados direto
             var vm = Program.CriarViewModel(carga, Program.CriarAmbiente(args, true, carga.PastaConfig));
 
             vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL1");
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "WIN7");
+            AguardarAutodescoberta(vm);
             Assert.StartsWith("Versão incompatível com o SO", vm.Programas.Single(p => p.Programa.Id == "mock-vs2022").AvisoCompatibilidade);
             vm.SelecionarTodosCommand.Execute(null);
             var resultados = await vm.InstalarAsync();
@@ -236,6 +242,13 @@ namespace WinAllApp.UI.Tests
                 return true;
             }, IntPtr.Zero);
             return titulos;
+        }
+
+        /// <summary>Espera os instaladores saírem de "procurando" (✔/❌) antes de marcar, como o técnico faz na tela.</summary>
+        private static void AguardarAutodescoberta(MainViewModel vm)
+        {
+            Assert.True(vm.VerificacaoArquivos.Wait(TimeSpan.FromSeconds(30)), "A autodescoberta dos instaladores não terminou.");
+            Assert.DoesNotContain(vm.Programas, p => p.Buscando);
         }
     }
 }

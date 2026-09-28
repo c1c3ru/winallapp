@@ -27,6 +27,7 @@ namespace WinAllApp.Core.Tests
             var vm = new MainViewModel(new LabCatalog(carga.Config), fila);
             vm.BlocoSelecionado = vm.Blocos[0];
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "LCC");
+            vm.AguardarAutodescoberta();
             return (vm, runner, fila);
         }
 
@@ -80,6 +81,7 @@ namespace WinAllApp.Core.Tests
 
             vm.BlocoSelecionado = vm.Blocos[1];
             vm.LaboratorioSelecionado = vm.Laboratorios[0];
+            vm.AguardarAutodescoberta();
 
             Assert.False(vm.TemContador);
             Assert.Equal(string.Empty, vm.ContadorTexto);
@@ -159,6 +161,7 @@ namespace WinAllApp.Core.Tests
 
             var fila = new InstallQueue(new RunnerFalso(), new CopiadorPastas(),
                 new RoteadorInstalacao(new ContextoInstalacao(carga.Config.PastaInstaladores, null, AmbienteSistema.Simular("10"))));
+            SynchronizationContext.SetSynchronizationContext(null);
             var vm = new MainViewModel(new LabCatalog(carga.Config), fila);
             Assert.Equal(ContextoInstalacao.PastaRedePadrao, vm.PastaRede);
         }
@@ -172,7 +175,9 @@ namespace WinAllApp.Core.Tests
             Assert.Equal(ContextoInstalacao.PastaRedePadrao, fila.Roteador.Contexto.PastaInstaladores);
             Assert.Null(vm.PastaRedeAcessivel);
             Assert.Contains("alterada", vm.PastaRedeStatus);
+            Assert.All(vm.Programas, p => Assert.True(p.Buscando)); // caminho novo: procura de novo os instaladores
 
+            vm.AguardarAutodescoberta();
             vm.Programas[0].Selecionado = true;
             await vm.InstalarAsync();
 
@@ -287,6 +292,7 @@ namespace WinAllApp.Core.Tests
             vm.SearchText = "zzz";
             vm.BlocoSelecionado = vm.Blocos[1];
             vm.LaboratorioSelecionado = vm.Laboratorios[0];
+            vm.AguardarAutodescoberta();
             Assert.Empty(vm.ProgramasVisiveis);
             vm.SearchText = string.Empty;
             Assert.Equal(vm.Programas.Count, vm.ProgramasVisiveis.Count);
@@ -358,6 +364,7 @@ namespace WinAllApp.Core.Tests
             var vm = new MainViewModel(new LabCatalog(carga.Config), fila);
             vm.BlocoSelecionado = vm.Blocos[0];
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "LCC");
+            vm.AguardarAutodescoberta();
             vm.Programas[1].Selecionado = true;
 
             await vm.InstalarAsync();

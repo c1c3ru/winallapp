@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using WinAllApp.Core.Models;
 using WinAllApp.Core.Services;
@@ -43,9 +44,11 @@ namespace WinAllApp.Core.Tests
                 }
             };
 
+            SynchronizationContext.SetSynchronizationContext(null);
             var vm = new MainViewModel(config, pasta, new ProcessRunner());
             vm.BlocoSelecionado = vm.Blocos[0];
             vm.LaboratorioSelecionado = vm.Laboratorios[0];
+            vm.AguardarAutodescoberta();
             vm.Programas[0].Selecionado = true;  // vscode
             vm.Programas[2].Selecionado = true;  // codeblocks
 
@@ -125,10 +128,12 @@ namespace WinAllApp.Core.Tests
             var carga = ConfigLoader.CarregarArquivo(Path.Combine(pastaApp, "config.simulacao.json"));
             Assert.True(carga.Valido, string.Join("; ", carga.Erros));
             var pastaInstaladores = InstallCommandBuilder.ResolverPastaInstaladores(carga.Config, carga.PastaConfig);
+            SynchronizationContext.SetSynchronizationContext(null);
             var vm = new MainViewModel(carga.Config, pastaInstaladores, new ProcessRunner());
 
             vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL1");
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "FALHAS");
+            vm.AguardarAutodescoberta();
             vm.SelecionarTodosCommand.Execute(null);
             var resultados = await vm.InstalarAsync();
 
@@ -140,6 +145,7 @@ namespace WinAllApp.Core.Tests
 
             vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL2");
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "LCC");
+            vm.AguardarAutodescoberta();
             vm.SelecionarTodosCommand.Execute(null);
             resultados = await vm.InstalarAsync();
 

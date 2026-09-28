@@ -85,6 +85,71 @@
       </Style.Triggers>
     </Style>
 
+    <!--
+      Autodescoberta (IsAvailable): nulo = procurando o instalador na rede (spinner cinza),
+      True = encontrado (✔ verde, checkbox habilitada), False = não encontrado (❌ vermelho, checkbox bloqueada).
+    -->
+    <Style x:Key="SpinnerBusca" TargetType="Grid" BasedOn="{StaticResource Spinner}">
+      <Setter Property="Width" Value="14" />
+      <Setter Property="Height" Value="14" />
+      <Setter Property="Visibility" Value="Collapsed" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding IsAvailable}" Value="{x:Null}">
+          <Setter Property="Visibility" Value="Visible" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style x:Key="IconeEncontrado" TargetType="Grid">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Visibility" Value="Collapsed" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding IsAvailable}" Value="True">
+          <Setter Property="Visibility" Value="Visible" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style x:Key="IconeNaoEncontrado" TargetType="Grid">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Visibility" Value="Collapsed" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+          <Setter Property="Visibility" Value="Visible" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <!-- A checkbox só habilita com o instalador encontrado (a lista inteira ainda trava durante a instalação) -->
+    <Style x:Key="CaixaPrograma" TargetType="CheckBox">
+      <Setter Property="IsEnabled" Value="False" />
+      <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding IsAvailable}" Value="True">
+          <Setter Property="IsEnabled" Value="True" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style x:Key="TextoBusca" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{StaticResource CorTextoSecundario}" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding IsAvailable}" Value="True">
+          <Setter Property="Foreground" Value="{StaticResource CorPrimaria}" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+          <Setter Property="Foreground" Value="{StaticResource CorErro}" />
+          <Setter Property="FontWeight" Value="SemiBold" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
     <!-- Linha do programa: fundo vermelho claro quando a instalação falhou -->
     <Style x:Key="LinhaPrograma" TargetType="Border">
       <Setter Property="BorderBrush" Value="{StaticResource CorBorda}" />
@@ -333,15 +398,43 @@
         </Button>
       </Grid>
 
-      <DockPanel Grid.Row="4" Margin="0,0,0,10" LastChildFill="False"
-                 Visibility="{Binding TemLaboratorio, Converter={StaticResource BoolParaVisivel}}">
-        <Button x:Name="BotaoSelecionarTodos" DockPanel.Dock="Left" Content="{Binding TextoSelecionarTodos}"
-                Style="{StaticResource Botao}" Command="{Binding SelecionarTodosCommand}" />
-        <Button x:Name="BotaoLimpar" DockPanel.Dock="Left" Content="Limpar seleção"
-                Style="{StaticResource Botao}" Command="{Binding LimparSelecaoCommand}" />
-        <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Text="{Binding ResumoSelecao}"
-                   Foreground="{StaticResource CorTextoSecundario}" />
-      </DockPanel>
+      <StackPanel Grid.Row="4" Margin="0,0,0,10"
+                  Visibility="{Binding TemLaboratorio, Converter={StaticResource BoolParaVisivel}}">
+        <DockPanel LastChildFill="False">
+          <Button x:Name="BotaoSelecionarTodos" DockPanel.Dock="Left" Content="{Binding TextoSelecionarTodos}"
+                  Style="{StaticResource Botao}" Command="{Binding SelecionarTodosCommand}" />
+          <Button x:Name="BotaoLimpar" DockPanel.Dock="Left" Content="Limpar seleção"
+                  Style="{StaticResource Botao}" Command="{Binding LimparSelecaoCommand}" />
+          <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Text="{Binding ResumoSelecao}"
+                     Foreground="{StaticResource CorTextoSecundario}" />
+        </DockPanel>
+        <!-- Autodescoberta: quantos instaladores do laboratório existem na pasta de rede -->
+        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+          <Grid x:Name="SpinnerDescoberta" Style="{StaticResource Spinner}" Width="14" Height="14" Margin="0,0,6,0"
+                Visibility="{Binding VerificandoArquivos, Converter={StaticResource BoolParaVisivel}}"
+                ToolTip="Procurando os instaladores na rede…">
+            <Grid.RenderTransform>
+              <RotateTransform />
+            </Grid.RenderTransform>
+            <Ellipse Stroke="{StaticResource CorBorda}" StrokeThickness="2.5" />
+            <Path Data="M7,1.25 A5.75,5.75 0 0 1 12.75,7" Stroke="{StaticResource CorTextoSecundario}" StrokeThickness="2.5"
+                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+          </Grid>
+          <TextBlock x:Name="TextoDisponibilidade" Text="{Binding ResumoDisponibilidade}" FontSize="12" VerticalAlignment="Center">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource CorTextoSecundario}" />
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding TemNaoEncontrados}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource CorErro}" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+        </StackPanel>
+      </StackPanel>
 
       <Border Grid.Row="5" BorderBrush="{StaticResource CorBorda}" BorderThickness="1">
         <Grid>
@@ -361,11 +454,34 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                       </Grid.ColumnDefinitions>
-                      <CheckBox IsChecked="{Binding Selecionado}" VerticalContentAlignment="Center" ToolTip="{Binding Mensagem}">
+                      <CheckBox IsChecked="{Binding Selecionado}" VerticalContentAlignment="Center" ToolTip="{Binding StatusBusca}"
+                                Style="{StaticResource CaixaPrograma}">
                         <StackPanel Margin="6,0,0,0">
-                          <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <DockPanel>
+                            <!-- ✔ / ❌ / procurando, ao lado do nome -->
+                            <Grid DockPanel.Dock="Left" Style="{StaticResource SpinnerBusca}" Margin="0,0,6,0">
+                              <Grid.RenderTransform>
+                                <RotateTransform />
+                              </Grid.RenderTransform>
+                              <Ellipse Stroke="{StaticResource CorBorda}" StrokeThickness="2.5" />
+                              <Path Data="M7,1.25 A5.75,5.75 0 0 1 12.75,7" Stroke="{StaticResource CorTextoSecundario}" StrokeThickness="2.5"
+                                    StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                            </Grid>
+                            <Grid DockPanel.Dock="Left" Style="{StaticResource IconeEncontrado}" Margin="0,0,6,0">
+                              <Ellipse Fill="{StaticResource CorPrimaria}" />
+                              <Path Data="M4.5,8.3 L7,10.8 L11.6,5.6" Stroke="#FFFFFFFF" StrokeThickness="2"
+                                    StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                            </Grid>
+                            <Grid DockPanel.Dock="Left" Style="{StaticResource IconeNaoEncontrado}" Margin="0,0,6,0">
+                              <Ellipse Fill="{StaticResource CorErro}" />
+                              <Path Data="M5,5 L11,11 M11,5 L5,11" Stroke="#FFFFFFFF" StrokeThickness="2"
+                                    StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                            </Grid>
+                            <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" />
+                          </DockPanel>
                           <TextBlock Text="{Binding Detalhe}" FontSize="12" TextWrapping="Wrap"
                                      Foreground="{StaticResource CorTextoSecundario}" />
+                          <TextBlock Text="{Binding StatusBusca}" Style="{StaticResource TextoBusca}" />
                           <TextBlock Text="{Binding Observacao}" FontSize="12" TextWrapping="Wrap" FontStyle="Italic"
                                      Foreground="#FF8A5A00"
                                      Visibility="{Binding TemObservacao, Converter={StaticResource BoolParaVisivel}}" />
