@@ -77,3 +77,9 @@ Tentativas de corrigir o mesmo bug no WPF/XAML: **1 de 5** (spinner).
   `11-instalando-spinner` (spinner no rodapé e na linha, contador "1 de 3 · 0 instalado(s) · 1 falha(s)" em vermelho,
   linha com falha em vermelho com o motivo), `12-falha-alerta` (faixa vermelha listando o programa que falhou, contador final
   "3 de 3 · 2 instalado(s) · 1 falha(s)") e `09-rede-inacessivel`.
+- **v0.2.1, CI Windows:** `ModoSimulacao_Motor4Categorias_RoteiaConformeOWindows("10")` falhou com `ArgumentNullException`
+  (linha nula no Registro). Causa: o xUnit roda os `Post` do contexto em paralelo, e os avisos da fila eram postados um a um,
+  então duas threads escreviam no Registro ao mesmo tempo e um "Instalando" atrasado podia sobrescrever o "Instalado".
+  Na janela real (Dispatcher de uma thread só) isso não acontece, mas o ViewModel agora é robusto a qualquer contexto:
+  os avisos vão para uma fila própria e são aplicados em ordem, um de cada vez, e o final da instalação aplica o que faltar
+  antes do resumo. Teste novo `ContextoQueRodaPostsEmParalelo_AvisosSaemEmOrdemEOContadorFecha` falha com o código antigo e passa agora.

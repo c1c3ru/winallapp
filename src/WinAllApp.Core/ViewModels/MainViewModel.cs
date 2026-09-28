@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -33,6 +34,8 @@ namespace WinAllApp.Core.ViewModels
         private string _mensagemErro;
         private bool _erroDaRede;
         private IReadOnlyList<ProgramaItemViewModel> _itensDaFila = Array.Empty<ProgramaItemViewModel>();
+        private readonly ConcurrentQueue<Action> _avisosPendentes = new ConcurrentQueue<Action>();
+        private readonly object _travaAvisos = new object();
 
         public MainViewModel(InstallerConfig config, string pastaInstaladores, IProcessRunner runner)
             : this(new LabCatalog(config), new InstallQueue(runner, pastaInstaladores))
@@ -392,6 +395,7 @@ namespace WinAllApp.Core.ViewModels
             }
             catch (Exception ex)
             {
+                AplicarAvisosPendentesComSeguranca();
                 AdicionarLog($"Erro inesperado: {ex.Message}");
                 foreach (var item in itens.Where(i => !i.Concluido))
                 {
@@ -402,6 +406,8 @@ namespace WinAllApp.Core.ViewModels
             }
             finally
             {
+                // Garante que todos os avisos da fila já foram aplicados antes do resumo e do contador final.
+                AplicarAvisosPendentesComSeguranca();
                 // Este await não usa ConfigureAwait(false): o final roda de volta na thread da UI.
                 _cancelamento = null;
                 cancelamento.Dispose();
@@ -553,11 +559,34 @@ namespace WinAllApp.Core.ViewModels
 
         private void AdicionarLog(string linha) => Log.Add($"{DateTime.Now:HH:mm:ss}  {linha}");
 
-        /// <summary>Roda na thread da tela: direto se já estiver nela (ou sem contexto, nos testes); senão, posta.</summary>
-        private static void NaUi(SynchronizationContext ui, Action acao)
+        /// <summary>
+        /// Aplica um aviso da fila na thread da tela: direto se já estiver nela (ou sem contexto); senão, posta.
+        /// Os avisos entram numa fila própria e saem um de cada vez, na ordem: mesmo que o contexto rode os posts em
+        /// paralelo (o do xUnit faz isso), um "Instalando" atrasado nunca sobrescreve o "Instalado" do mesmo item.
+        /// </summary>
+        private void NaUi(SynchronizationContext ui, Action acao)
         {
-            if (ui == null || SynchronizationContext.Current == ui) acao();
-            else ui.Post(_ => acao(), null);
+            _avisosPendentes.Enqueue(acao);
+            if (ui == null || SynchronizationContext.Current == ui) AplicarAvisosPendentes();
+            else ui.Post(_ => AplicarAvisosPendentes(), null);
+        }
+
+        private void AplicarAvisosPendentes()
+        {
+            lock (_travaAvisos)
+                while (_avisosPendentes.TryDequeue(out var acao)) acao();
+        }
+
+        private void AplicarAvisosPendentesComSeguranca()
+        {
+            try
+            {
+                AplicarAvisosPendentes();
+            }
+            catch (Exception ex)
+            {
+                AdicionarLog($"Erro inesperado ao atualizar a tela: {ex.Message}");
+            }
         }
     }
 }
