@@ -125,7 +125,7 @@ namespace WinAllApp.Core.Tests
         {
             var carga = ConfigLoader.CarregarArquivo(Path.Combine(Dados.Pasta, "app", "config.json"));
             Assert.Equal(ContextoInstalacao.PastaRedePadrao, carga.Config.PastaInstaladores);
-            Assert.Equal(@"\\10.50.11.2\informatica\NAC - Núcleo de Atendimento ao Cliente\ no windows\Programas\Laboratórios - Programas",
+            Assert.Equal(@"\\10.50.11.2\informatica\NAC - Núcleo de Atendimento ao Cliente\Programas\Laboratórios - Programas",
                 ContextoInstalacao.PastaRedePadrao);
 
             var fila = new InstallQueue(new RunnerFalso(), new CopiadorPastas(),

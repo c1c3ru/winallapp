@@ -35,10 +35,10 @@ Tentativas de corrigir o mesmo bug no WPF/XAML: **1 de 5** (spinner).
 ## 2) Input de Caminho de Rede e Escape de Strings
 
 - **Feito:** campo `CampoPastaRede` (TextBox two-way em `PastaRede`) no topo da área principal, com o padrão
-  `\\10.50.11.2\informatica\NAC - Núcleo de Atendimento ao Cliente\ no windows\Programas\Laboratórios - Programas`
+  `\\10.50.11.2\informatica\NAC - Núcleo de Atendimento ao Cliente\Programas\Laboratórios - Programas`
   vindo do `config.json` (constante `ContextoInstalacao.PastaRedePadrao`). O texto vai direto para o roteador
   (espaços/aspas das pontas são removidos). Nada de validar credenciais: um erro de acesso vira falha no item e alerta.
-- O caminho foi copiado exatamente como pedido, **inclusive o espaço antes de "no windows"**.
+- **Correção (2026-09-28, v0.2.1):** o trecho `\ no windows\` do pedido original não existe no servidor (confirmado pelo usuário) e foi removido do caminho padrão.
 - `ProcessRunner.CriarInfo` põe o executável entre aspas duplas (`ComAspas`, sem duplicar) antes do `Process.Start`.
   MSI (`/i "caminho"`) e .bat (`cmd /c ""caminho" args"`) já iam entre aspas.
 

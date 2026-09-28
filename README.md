@@ -17,7 +17,7 @@ instala tudo em fila, de forma silenciosa, sem travar a janela.
 |---|---|---|
 | **.NET Framework 4.8** | Instalar (download gratuito da Microsoft) | Já vem no sistema |
 | **Conta de Administrador** | Obrigatória | Obrigatória |
-| **Acesso à pasta de rede** (padrão `\\10.50.11.2\informatica\NAC - Núcleo de Atendimento ao Cliente\ no windows\Programas\Laboratórios - Programas`) | Obrigatório | Obrigatório |
+| **Acesso à pasta de rede** (padrão `\\10.50.11.2\informatica\NAC - Núcleo de Atendimento ao Cliente\Programas\Laboratórios - Programas`) | Obrigatório | Obrigatório |
 | winget | Não existe no Windows 7/8.1 | Opcional (App "Instalador de Aplicativo") |
 | Chocolatey | Opcional. Exige **.NET 4.8** e **TLS 1.2 ativado** (atualização KB3140245 + registro) | Não é usado |
 
@@ -90,7 +90,7 @@ Estrutura:
 
 ```json
 {
-  "pastaInstaladores": "\\\\10.50.11.2\\informatica\\NAC - Núcleo de Atendimento ao Cliente\\ no windows\\Programas\\Laboratórios - Programas",
+  "pastaInstaladores": "\\\\10.50.11.2\\informatica\\NAC - Núcleo de Atendimento ao Cliente\\Programas\\Laboratórios - Programas",
   "pastaDestinoCopias": "C:\\Programas",
   "blocos": [
     {

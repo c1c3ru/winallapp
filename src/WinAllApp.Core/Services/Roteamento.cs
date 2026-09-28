@@ -118,7 +118,7 @@ namespace WinAllApp.Core.Services
 
         /// <summary>Pasta de rede do campus com os instaladores dos laboratórios (padrão do config.json).</summary>
         public const string PastaRedePadrao =
-            @"\\10.50.11.2\informatica\NAC - Núcleo de Atendimento ao Cliente\ no windows\Programas\Laboratórios - Programas";
+            @"\\10.50.11.2\informatica\NAC - Núcleo de Atendimento ao Cliente\Programas\Laboratórios - Programas";
 
         /// <summary>
         /// Fonte primária: a pasta de rede com os instaladores e pastas. Pode ser trocada na tela (campo "Pasta de rede")
