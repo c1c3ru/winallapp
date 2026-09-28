@@ -134,14 +134,21 @@ namespace WinAllApp.Core.Tests
             vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL1");
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "FALHAS");
             vm.AguardarAutodescoberta();
+
+            // Autodescoberta: o instalador ausente aparece com ❌ e não entra na fila.
+            var ausente = vm.Programas.Single(p => p.Programa.Id == "inexistente");
+            Assert.True(ausente.NaoEncontrado);
+            Assert.EndsWith("nao-existe.exe", ausente.StatusBusca);
             vm.SelecionarTodosCommand.Execute(null);
+            Assert.False(ausente.Selecionado);
             var resultados = await vm.InstalarAsync();
 
             foreach (var linha in vm.Log) _saida.WriteLine(linha);
 
+            Assert.Equal(2, resultados.Count);
             Assert.Equal(EstadoInstalacao.Falha, resultados[0].Estado);            // exit 1603
             Assert.Equal(EstadoInstalacao.SucessoReiniciar, resultados[1].Estado); // exit 3010
-            Assert.Equal(EstadoInstalacao.Falha, resultados[2].Estado);            // arquivo ausente
+            Assert.Equal(EstadoInstalacao.Pendente, ausente.Estado);
 
             vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL2");
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "LCC");

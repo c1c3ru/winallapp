@@ -229,7 +229,7 @@ namespace WinAllApp.Core.Services
                 if (primeira != busca)
                 {
                     // Observa a exceção de uma consulta abandonada (senão ela aparece como "não observada").
-                    busca.ContinueWith(t => t.Exception, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+                    _ = busca.ContinueWith(t => t.Exception, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
                     cancelamento.ThrowIfCancellationRequested();
                     return new ResultadoVerificacao(alvo, caminho, StatusArquivo.SemResposta);
                 }

@@ -11,7 +11,8 @@
 | Ciclo | O que foi feito | Resultado |
 |---|---|---|
 | 0 | Leitura de `Roteamento`, `InstallQueue`, `ConfigLoader`, `MainViewModel`, `ProgramaItemViewModel`, `MainWindow.xaml` e dos testes. Plano abaixo. | Plano definido |
-| 1 | Scanner no `ConfigLoader`, `IsAvailable` no item, verificação no `MainViewModel`, ícones e bloqueio no XAML, 14 testes novos no Linux e 1 teste de tela novo no Windows. Versão 0.3.0. | Build Release ok; 116 testes ok no Linux (3 rodadas). CI Windows: aguardando |
+| 1 | Scanner no `ConfigLoader`, `IsAvailable` no item, verificação no `MainViewModel`, ícones e bloqueio no XAML, 14 testes novos no Linux e 1 teste de tela novo no Windows. Versão 0.3.0. | Build Release ok; 116 testes ok no Linux (3 rodadas). CI Windows: 1 teste só-Windows esperava a falha do instalador ausente (seção 5) |
+| 2 | Teste da simulação atualizado para o ❌ do instalador ausente. | Aguardando o CI Windows |
 
 Tentativas de corrigir binding/assincronicidade: **0 de 5**.
 
@@ -66,4 +67,9 @@ Tentativas de corrigir binding/assincronicidade: **0 de 5**.
   winget; o `config.json` não muda; thread da tela livre.
 - **Testes de tela (Windows):** `Autodescoberta_MostraBuscandoDepoisCheckOuXEBloqueiaOQueFalta` (capturas 13 e 14) e
   ajustes nos testes existentes.
-- Resultado local: 116 aprovados, 1 ignorado (só Windows), 3 rodadas seguidas. CI Windows: aguardando.
+- Resultado local: 116 aprovados, 1 ignorado (só Windows), 3 rodadas seguidas.
+- **CI Windows, ciclo 1 (`ac7f9a3`):** falhou 1 teste que só roda no Windows, `Simulacao_ConfigDoAplicativoComBatsFicticios`
+  (`ArgumentOutOfRangeException` em `resultados[2]`). Não é bug de binding: o teste esperava que o programa com
+  instalador ausente ("inexistente") entrasse na fila e falhasse; com a autodescoberta ele fica ❌ e não pode ser marcado,
+  então a fila tem 2 itens. **Ciclo 2:** o teste passou a conferir o ❌, o bloqueio e a fila com 2 itens. Também tirei o
+  aviso CS4014 do `ContinueWith` que observa a consulta abandonada. Os testes de tela não chegaram a rodar (etapa pulada).
