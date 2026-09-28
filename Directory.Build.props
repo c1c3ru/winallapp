@@ -7,7 +7,7 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Company>WinAllApp</Company>
     <Product>WinAllApp - Instalação em Lote por Laboratório</Product>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <!-- Assemblies de referência do .NET Framework 4.8 (dispensa o Targeting Pack instalado) -->

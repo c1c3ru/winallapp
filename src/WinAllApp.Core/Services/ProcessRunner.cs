@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,14 +21,7 @@ namespace WinAllApp.Core.Services
             if (comando == null) throw new ArgumentNullException(nameof(comando));
             cancelamento.ThrowIfCancellationRequested();
 
-            var info = new ProcessStartInfo(comando.Arquivo, comando.Argumentos)
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = comando.PastaTrabalho ?? Environment.CurrentDirectory
-            };
-
-            var processo = new Process { StartInfo = info, EnableRaisingEvents = true };
+            var processo = new Process { StartInfo = CriarInfo(comando), EnableRaisingEvents = true };
             var tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
             processo.Exited += (s, e) =>
             {
@@ -78,6 +72,30 @@ namespace WinAllApp.Core.Services
             }, TaskScheduler.Default);
 
             return tcs.Task;
+        }
+
+        /// <summary>
+        /// Monta o ProcessStartInfo. No Windows o executável vai entre aspas duplas ("\\10.50.11.2\...\Laboratórios - Programas\setup.exe"),
+        /// para espaços em caminhos UNC não quebrarem a linha de comando do CreateProcess.
+        /// </summary>
+        public static ProcessStartInfo CriarInfo(InstallCommand comando)
+        {
+            if (comando == null) throw new ArgumentNullException(nameof(comando));
+            var windows = Path.DirectorySeparatorChar == '\\';
+            return new ProcessStartInfo(windows ? ComAspas(comando.Arquivo) : comando.Arquivo, comando.Argumentos)
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = comando.PastaTrabalho ?? Environment.CurrentDirectory
+            };
+        }
+
+        /// <summary>Envolve o caminho em aspas duplas (sem duplicar se já vier entre aspas).</summary>
+        public static string ComAspas(string caminho)
+        {
+            var limpo = (caminho ?? string.Empty).Trim();
+            if (limpo.Length >= 2 && limpo[0] == '"' && limpo[limpo.Length - 1] == '"') return limpo;
+            return "\"" + limpo.Trim('"') + "\"";
         }
 
         private static void Encerrar(Process processo)

@@ -69,8 +69,8 @@ namespace WinAllApp.Core.Services
 
         private readonly IProcessRunner _runner;
         private readonly ICopiadorPastas _copiador;
-        private readonly RoteadorInstalacao _roteador;
         private readonly string _pastaInstaladores;
+        private RoteadorInstalacao _roteador;
 
         /// <summary>Compatibilidade: todos os programas vêm da pasta de rede, sem gerenciadores de pacote.</summary>
         public InstallQueue(IProcessRunner runner, string pastaInstaladores)
@@ -91,17 +91,17 @@ namespace WinAllApp.Core.Services
         /// <summary>Permite pular a checagem de existência do instalador (útil em testes com runner falso).</summary>
         public bool VerificarArquivoExiste { get; set; } = true;
 
-        /// <summary>O roteador em uso (cria um padrão, sem gerenciadores, quando a fila foi montada só com a pasta).</summary>
-        public RoteadorInstalacao Roteador => _roteador ?? CriarRoteadorPadrao();
+        /// <summary>
+        /// O roteador em uso. Quando a fila foi montada só com a pasta, cria uma vez um padrão sem gerenciadores
+        /// (sempre o mesmo objeto, para a pasta de rede editada na tela valer na instalação).
+        /// </summary>
+        public RoteadorInstalacao Roteador => _roteador ?? (_roteador = CriarRoteadorPadrao());
 
         private RoteadorInstalacao CriarRoteadorPadrao()
         {
             var contexto = new ContextoInstalacao(_pastaInstaladores, null, new AmbienteSistema());
-            if (!VerificarArquivoExiste)
-            {
-                contexto.ArquivoExiste = _ => true;
-                contexto.PastaExiste = _ => true;
-            }
+            contexto.ArquivoExiste = f => !VerificarArquivoExiste || File.Exists(f);
+            contexto.PastaExiste = d => !VerificarArquivoExiste || Directory.Exists(d);
             return new RoteadorInstalacao(contexto);
         }
 

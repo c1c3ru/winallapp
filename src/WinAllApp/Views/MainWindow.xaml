@@ -37,6 +37,68 @@
       <Setter Property="MinWidth" Value="170" />
     </Style>
 
+    <SolidColorBrush x:Key="CorErro" Color="#FFB3261E" />
+    <SolidColorBrush x:Key="CorFundoErro" Color="#FFFDECEA" />
+
+    <!--
+      Spinner: um arco girando enquanto o elemento está visível (a animação para quando ele some).
+      Cada spinner declara o próprio RotateTransform (não congelado) para poder ser animado.
+      Sem x:Name no BeginStoryboard: no XAML carregado pelo XamlReader o nome não entra no escopo do Style.
+      Para parar, a saída inicia uma animação instantânea que substitui a infinita (SnapshotAndReplace) e se remove.
+    -->
+    <Style x:Key="Spinner" TargetType="Grid">
+      <Setter Property="Width" Value="18" />
+      <Setter Property="Height" Value="18" />
+      <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Style.Triggers>
+        <Trigger Property="IsVisible" Value="True">
+          <Trigger.EnterActions>
+            <BeginStoryboard>
+              <Storyboard>
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                 From="0" To="360" Duration="0:0:0.9" RepeatBehavior="Forever" />
+              </Storyboard>
+            </BeginStoryboard>
+          </Trigger.EnterActions>
+          <Trigger.ExitActions>
+            <BeginStoryboard HandoffBehavior="SnapshotAndReplace">
+              <Storyboard FillBehavior="Stop">
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                 To="0" Duration="0" />
+              </Storyboard>
+            </BeginStoryboard>
+          </Trigger.ExitActions>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+
+    <!-- Spinner pequeno da linha que está sendo instalada -->
+    <Style x:Key="SpinnerItem" TargetType="Grid" BasedOn="{StaticResource Spinner}">
+      <Setter Property="Width" Value="14" />
+      <Setter Property="Height" Value="14" />
+      <Setter Property="Visibility" Value="Collapsed" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding Estado}" Value="Instalando">
+          <Setter Property="Visibility" Value="Visible" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <!-- Linha do programa: fundo vermelho claro quando a instalação falhou -->
+    <Style x:Key="LinhaPrograma" TargetType="Border">
+      <Setter Property="BorderBrush" Value="{StaticResource CorBorda}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="Background" Value="Transparent" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding TemFalha}" Value="True">
+          <Setter Property="Background" Value="{StaticResource CorFundoErro}" />
+          <Setter Property="BorderBrush" Value="#FFF2B8B5" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
     <!-- Cor do texto de estado de cada programa -->
     <Style x:Key="EstadoTexto" TargetType="TextBlock">
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -74,7 +136,34 @@
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
-          <TextBlock x:Name="TextoStatus" Text="{Binding StatusTexto}" TextTrimming="CharacterEllipsis" Margin="0,0,0,6" />
+          <DockPanel Margin="0,0,0,6">
+            <!-- Spinner da instalação: gira enquanto a fila roda em segundo plano (a janela continua respondendo) -->
+            <Grid x:Name="SpinnerInstalacao" DockPanel.Dock="Left" Style="{StaticResource Spinner}" Margin="0,0,8,0"
+                  Visibility="{Binding Ocupado, Converter={StaticResource BoolParaVisivel}}" ToolTip="Instalando…">
+              <Grid.RenderTransform>
+                <RotateTransform />
+              </Grid.RenderTransform>
+              <Ellipse Stroke="{StaticResource CorBorda}" StrokeThickness="3" />
+              <Path Data="M9,1.5 A7.5,7.5 0 0 1 16.5,9" Stroke="{StaticResource CorPrimaria}" StrokeThickness="3"
+                    StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+            </Grid>
+            <!-- Contador: concluídos de total · instalados · falhas -->
+            <TextBlock x:Name="TextoContador" DockPanel.Dock="Right" Text="{Binding ContadorTexto}" Margin="12,0,0,0"
+                       VerticalAlignment="Center" Visibility="{Binding TemContador, Converter={StaticResource BoolParaVisivel}}">
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Setter Property="FontWeight" Value="SemiBold" />
+                  <Setter Property="Foreground" Value="{StaticResource CorPrimaria}" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding TemFalhas}" Value="True">
+                      <Setter Property="Foreground" Value="{StaticResource CorErro}" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
+            <TextBlock x:Name="TextoStatus" Text="{Binding StatusTexto}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+          </DockPanel>
           <ProgressBar x:Name="BarraProgresso" Height="14" Minimum="0" Maximum="100" Value="{Binding Progresso, Mode=OneWay}" />
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
@@ -106,29 +195,10 @@
 
         <!-- Sistema detectado, pasta de rede e tutorial -->
         <StackPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
-          <TextBlock Text="Pasta de rede" Style="{StaticResource Rotulo}" />
-          <TextBlock x:Name="TextoPastaRede" Text="{Binding PastaRedeStatus}" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6">
-            <TextBlock.Style>
-              <Style TargetType="TextBlock">
-                <Setter Property="Foreground" Value="{StaticResource CorTextoSecundario}" />
-                <Style.Triggers>
-                  <DataTrigger Binding="{Binding PastaRedeAcessivel}" Value="True">
-                    <Setter Property="Foreground" Value="#FF1E7B34" />
-                  </DataTrigger>
-                  <DataTrigger Binding="{Binding PastaRedeAcessivel}" Value="False">
-                    <Setter Property="Foreground" Value="#FFB3261E" />
-                    <Setter Property="FontWeight" Value="SemiBold" />
-                  </DataTrigger>
-                </Style.Triggers>
-              </Style>
-            </TextBlock.Style>
-          </TextBlock>
-          <TextBlock Text="Sistema" Style="{StaticResource Rotulo}" Margin="0,6,0,6" />
+          <TextBlock Text="Sistema" Style="{StaticResource Rotulo}" />
           <TextBlock x:Name="TextoAmbiente" Text="{Binding ResumoAmbiente, Mode=OneWay}" TextWrapping="Wrap" FontSize="12"
                      Foreground="{StaticResource CorTextoSecundario}" Margin="0,0,0,10" />
           <StackPanel Orientation="Horizontal">
-            <Button x:Name="BotaoVerificarRede" Content="Verificar rede" Style="{StaticResource Botao}"
-                    Command="{Binding VerificarPastaRedeCommand}" />
             <Button x:Name="BotaoTutorial" Content="Tutorial" Style="{StaticResource Botao}" Margin="0"
                     Command="{Binding AbrirTutorialCommand}" />
           </StackPanel>
@@ -163,6 +233,9 @@
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
         <RowDefinition Height="*" />
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
@@ -172,9 +245,97 @@
         <TextBlock Text="{Binding Subtitulo}" Foreground="{StaticResource CorTextoSecundario}" TextWrapping="Wrap" />
       </StackPanel>
 
-      <DockPanel Grid.Row="1" Margin="0,0,0,10" LastChildFill="False"
+      <!-- Pasta de rede: editável, com o caminho do config.json. Verificar roda em segundo plano (spinner ao lado). -->
+      <Border Grid.Row="1" Background="{StaticResource CorLateral}" BorderBrush="{StaticResource CorBorda}" BorderThickness="1"
+              Padding="12,8" Margin="0,0,0,10">
+        <StackPanel>
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Left" Text="Pasta de rede" Style="{StaticResource Rotulo}" Margin="0,0,10,0" VerticalAlignment="Center" />
+            <Button x:Name="BotaoVerificarRede" DockPanel.Dock="Right" Content="Verificar" Style="{StaticResource Botao}" Margin="8,0,0,0"
+                    Command="{Binding VerificarPastaRedeCommand}" ToolTip="Testa se a pasta responde (sem travar a janela)" />
+            <Grid x:Name="SpinnerRede" DockPanel.Dock="Right" Style="{StaticResource Spinner}" Margin="8,0,0,0"
+                  Visibility="{Binding VerificandoPastaRede, Converter={StaticResource BoolParaVisivel}}" ToolTip="Verificando a pasta de rede…">
+              <Grid.RenderTransform>
+                <RotateTransform />
+              </Grid.RenderTransform>
+              <Ellipse Stroke="{StaticResource CorBorda}" StrokeThickness="3" />
+              <Path Data="M9,1.5 A7.5,7.5 0 0 1 16.5,9" Stroke="{StaticResource CorPrimaria}" StrokeThickness="3"
+                    StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+            </Grid>
+            <TextBox x:Name="CampoPastaRede" Text="{Binding PastaRede, UpdateSourceTrigger=PropertyChanged}"
+                     IsEnabled="{Binding PodeNavegar}" MinHeight="28" VerticalContentAlignment="Center" Padding="4,0"
+                     ToolTip="Caminho da pasta de rede com os instaladores (ex.: \\servidor\pasta). Pode ser editado antes de instalar." />
+          </DockPanel>
+          <TextBlock x:Name="TextoPastaRede" Text="{Binding PastaRedeStatus}" TextWrapping="Wrap" FontSize="12" Margin="0,6,0,0">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource CorTextoSecundario}" />
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding PastaRedeAcessivel}" Value="True">
+                    <Setter Property="Foreground" Value="#FF1E7B34" />
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding PastaRedeAcessivel}" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource CorErro}" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+        </StackPanel>
+      </Border>
+
+      <!-- Alerta vermelho: pasta de rede inacessível, programas que falharam ou erro inesperado -->
+      <Border x:Name="FaixaErro" Grid.Row="2" Background="{StaticResource CorFundoErro}" BorderBrush="{StaticResource CorErro}"
+              BorderThickness="1" Padding="10,8" Margin="0,0,0,10"
+              Visibility="{Binding TemErro, Converter={StaticResource BoolParaVisivel}}">
+        <DockPanel>
+          <Grid DockPanel.Dock="Left" Width="20" Height="20" VerticalAlignment="Top" Margin="0,0,10,0">
+            <Ellipse Fill="{StaticResource CorErro}" />
+            <Path Data="M10,5 L10,11.5 M10,14.8 L10,15" Stroke="#FFFFFFFF" StrokeThickness="2.4"
+                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+          </Grid>
+          <Button x:Name="BotaoFecharErro" DockPanel.Dock="Right" Content="Fechar" Padding="10,2" Margin="10,0,0,0"
+                  VerticalAlignment="Top" Command="{Binding FecharErroCommand}" />
+          <TextBlock x:Name="TextoErro" Text="{Binding MensagemErro}" TextWrapping="Wrap" FontWeight="SemiBold"
+                     Foreground="#FF8C1D18" VerticalAlignment="Center" />
+        </DockPanel>
+      </Border>
+
+      <!-- Barra de pesquisa: filtra a lista em tempo real (SearchText no ViewModel), sem desmarcar nada -->
+      <Grid x:Name="BarraPesquisa" Grid.Row="3" Margin="0,0,0,10"
+            Visibility="{Binding TemLaboratorio, Converter={StaticResource BoolParaVisivel}}">
+        <TextBox x:Name="CampoPesquisa" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                 MinHeight="30" VerticalContentAlignment="Center" Padding="26,0,30,0"
+                 ToolTip="Filtra pelo nome, versão ou categoria. Os programas marcados continuam marcados." />
+        <Path Data="M6.5,1 A5.5,5.5 0 1 1 6.49,1 Z M10.5,10.5 L15,15" Stroke="{StaticResource CorTextoSecundario}" StrokeThickness="1.6"
+              Width="16" Height="16" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,0,0,0"
+              StrokeEndLineCap="Round" IsHitTestVisible="False" />
+        <TextBlock Text="Pesquisar programa neste laboratório…" Margin="30,0,0,0" VerticalAlignment="Center"
+                   Foreground="#FF8A93A0" IsHitTestVisible="False">
+          <TextBlock.Style>
+            <Style TargetType="TextBlock">
+              <Setter Property="Visibility" Value="Collapsed" />
+              <Style.Triggers>
+                <DataTrigger Binding="{Binding SearchText}" Value="">
+                  <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+              </Style.Triggers>
+            </Style>
+          </TextBlock.Style>
+        </TextBlock>
+        <Button x:Name="BotaoLimparPesquisa" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0"
+                Width="24" Height="22" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                ToolTip="Limpar pesquisa" Command="{Binding LimparPesquisaCommand}"
+                Visibility="{Binding TemPesquisa, Converter={StaticResource BoolParaVisivel}}">
+          <Path Data="M1,1 L9,9 M9,1 L1,9" Stroke="{StaticResource CorTextoSecundario}" StrokeThickness="1.6"
+                StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+        </Button>
+      </Grid>
+
+      <DockPanel Grid.Row="4" Margin="0,0,0,10" LastChildFill="False"
                  Visibility="{Binding TemLaboratorio, Converter={StaticResource BoolParaVisivel}}">
-        <Button x:Name="BotaoSelecionarTodos" DockPanel.Dock="Left" Content="Selecionar Todos do Laboratório"
+        <Button x:Name="BotaoSelecionarTodos" DockPanel.Dock="Left" Content="{Binding TextoSelecionarTodos}"
                 Style="{StaticResource Botao}" Command="{Binding SelecionarTodosCommand}" />
         <Button x:Name="BotaoLimpar" DockPanel.Dock="Left" Content="Limpar seleção"
                 Style="{StaticResource Botao}" Command="{Binding LimparSelecaoCommand}" />
@@ -182,7 +343,7 @@
                    Foreground="{StaticResource CorTextoSecundario}" />
       </DockPanel>
 
-      <Border Grid.Row="2" BorderBrush="{StaticResource CorBorda}" BorderThickness="1">
+      <Border Grid.Row="5" BorderBrush="{StaticResource CorBorda}" BorderThickness="1">
         <Grid>
           <TextBlock x:Name="TextoAvisoVazio" Text="{Binding TextoAvisoVazio}"
                      HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Margin="24"
@@ -190,11 +351,11 @@
                      Visibility="{Binding MostrarAvisoVazio, Converter={StaticResource BoolParaVisivel}}" />
 
           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl x:Name="ListaProgramas" ItemsSource="{Binding Programas}" IsEnabled="{Binding PodeNavegar}"
+            <ItemsControl x:Name="ListaProgramas" ItemsSource="{Binding ProgramasVisiveis}" IsEnabled="{Binding PodeNavegar}"
                           KeyboardNavigation.TabNavigation="Continue">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Border BorderBrush="{StaticResource CorBorda}" BorderThickness="0,0,0,1" Padding="12,8">
+                  <Border Style="{StaticResource LinhaPrograma}">
                     <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -211,10 +372,29 @@
                           <TextBlock Text="{Binding AvisoCompatibilidade}" FontSize="12" TextWrapping="Wrap" FontWeight="SemiBold"
                                      Foreground="#FFB3261E"
                                      Visibility="{Binding TemAvisoCompatibilidade, Converter={StaticResource BoolParaVisivel}}" />
+                          <TextBlock FontSize="12" TextWrapping="Wrap" FontWeight="SemiBold" Foreground="{StaticResource CorErro}"
+                                     Visibility="{Binding MostrarMensagemErro, Converter={StaticResource BoolParaVisivel}}">
+                            <Run Text="Motivo: " /><Run Text="{Binding Mensagem, Mode=OneWay}" />
+                          </TextBlock>
                         </StackPanel>
                       </CheckBox>
-                      <TextBlock Grid.Column="1" Text="{Binding EstadoTexto}" Style="{StaticResource EstadoTexto}"
-                                 Margin="12,0,0,0" ToolTip="{Binding Mensagem}" />
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
+                        <Grid Style="{StaticResource SpinnerItem}" Margin="0,0,6,0">
+                          <Grid.RenderTransform>
+                            <RotateTransform />
+                          </Grid.RenderTransform>
+                          <Ellipse Stroke="{StaticResource CorBorda}" StrokeThickness="2.5" />
+                          <Path Data="M7,1.25 A5.75,5.75 0 0 1 12.75,7" Stroke="{StaticResource CorPrimaria}" StrokeThickness="2.5"
+                                StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                        </Grid>
+                        <!-- Ícone vermelho de falha -->
+                        <Grid Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center" ToolTip="{Binding Mensagem}"
+                              Visibility="{Binding TemFalha, Converter={StaticResource BoolParaVisivel}}">
+                          <Ellipse Fill="{StaticResource CorErro}" />
+                          <Path Data="M5,5 L11,11 M11,5 L5,11" Stroke="#FFFFFFFF" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                        </Grid>
+                        <TextBlock Text="{Binding EstadoTexto}" Style="{StaticResource EstadoTexto}" ToolTip="{Binding Mensagem}" />
+                      </StackPanel>
                     </Grid>
                   </Border>
                 </DataTemplate>
@@ -224,7 +404,7 @@
         </Grid>
       </Border>
 
-      <Expander Grid.Row="3" Header="Registro da instalação" Margin="0,10,0,0">
+      <Expander Grid.Row="6" Header="Registro da instalação" Margin="0,10,0,0">
         <ListBox x:Name="ListaLog" ItemsSource="{Binding Log}" Height="120" FontFamily="Consolas" FontSize="12"
                  BorderBrush="{StaticResource CorBorda}" />
       </Expander>

@@ -127,6 +127,22 @@ namespace WinAllApp.UI.Tests
             Assert.Equal(@"/i ""\\servidor\instaladores\Google Earth\earth.msi"" /qn /norestart", msi.Argumentos);
         }
 
+        /// <summary>O caminho padrão do campus (espaços, acentos e a pasta " no windows") chega intacto e entre aspas ao Process.Start.</summary>
+        [Fact]
+        public void CaminhoPadraoDoCampus_ChegaAoProcessStartEntreAspas()
+        {
+            var exe = InstallCommandBuilder.Construir(
+                new WinAllApp.Core.Models.Programa { Id = "a", Instalador = @"AutoCAD 2018\Setup.exe", Argumentos = "/W /q" },
+                ContextoInstalacao.PastaRedePadrao);
+            var esperado = ContextoInstalacao.PastaRedePadrao + @"\AutoCAD 2018\Setup.exe";
+            Assert.Equal(esperado, exe.Arquivo);
+
+            var info = ProcessRunner.CriarInfo(exe);
+            Assert.Equal("\"" + esperado + "\"", info.FileName);
+            Assert.Equal("/W /q", info.Arguments);
+            Assert.Equal(ContextoInstalacao.PastaRedePadrao + @"\AutoCAD 2018", info.WorkingDirectory);
+        }
+
         [Fact]
         public void PrimeiraExecucao_MostraOTutorial_DepoisNaoMaisAMenosQuePedido()
         {

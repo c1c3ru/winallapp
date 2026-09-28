@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -166,6 +167,9 @@ namespace WinAllApp.Core.Tests
             vm.SelecionarTodosCommand.Execute(null);
 
             var tarefa = vm.InstalarAsync();
+            // A fila roda em segundo plano (Task.Run): espera o 1º instalador começar antes de cancelar.
+            var limite = DateTime.UtcNow.AddSeconds(10);
+            while (runner.Comandos.IsEmpty && DateTime.UtcNow < limite) await Task.Delay(10);
             vm.CancelarCommand.Execute(null);
             var resultados = await tarefa;
 
