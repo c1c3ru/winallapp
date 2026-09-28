@@ -4,7 +4,7 @@
 > `config.json` existe na pasta de rede e mostra ✔ (encontrado, pode marcar) ou ❌ (não encontrado, bloqueado).
 > Branch: `claude/autodescoberta`. Atualizado a cada ciclo.
 
-**Situação: em andamento (ciclo 1: código pronto, aguardando o CI Windows com a janela real).** Versão 0.3.0.
+**Situação: concluído.** Versão 0.3.0. Verificação assíncrona, ✔/❌ e bloqueio conferidos na janela WPF real (capturas 13 e 14 no branch `capturas-ci`), sem travar a tela.
 
 ## Histórico de ciclos
 
@@ -12,9 +12,9 @@
 |---|---|---|
 | 0 | Leitura de `Roteamento`, `InstallQueue`, `ConfigLoader`, `MainViewModel`, `ProgramaItemViewModel`, `MainWindow.xaml` e dos testes. Plano abaixo. | Plano definido |
 | 1 | Scanner no `ConfigLoader`, `IsAvailable` no item, verificação no `MainViewModel`, ícones e bloqueio no XAML, 14 testes novos no Linux e 1 teste de tela novo no Windows. Versão 0.3.0. | Build Release ok; 116 testes ok no Linux (3 rodadas). CI Windows: 1 teste só-Windows esperava a falha do instalador ausente (seção 5) |
-| 2 | Teste da simulação atualizado para o ❌ do instalador ausente. | Aguardando o CI Windows |
+| 2 | Teste da simulação atualizado para o ❌ do instalador ausente. | **CI Windows verde** (commit `9e6da97`): testes da lógica, simulação com .bat reais e janela real. Condição de parada atingida |
 
-Tentativas de corrigir binding/assincronicidade: **0 de 5**.
+Tentativas de corrigir binding/assincronicidade: **0 de 5** (a única falha do CI foi um teste com a expectativa antiga).
 
 ## 1) Lógica de Autodescoberta (File.Exists e Directory.Exists assíncronos no ViewModel)
 
@@ -73,3 +73,7 @@ Tentativas de corrigir binding/assincronicidade: **0 de 5**.
   instalador ausente ("inexistente") entrasse na fila e falhasse; com a autodescoberta ele fica ❌ e não pode ser marcado,
   então a fila tem 2 itens. **Ciclo 2:** o teste passou a conferir o ❌, o bloqueio e a fila com 2 itens. Também tirei o
   aviso CS4014 do `ContinueWith` que observa a consulta abandonada. Os testes de tela não chegaram a rodar (etapa pulada).
+- **Ciclo 2, CI Windows verde.** Capturas conferidas: `13-autodescoberta-procurando` (rede lenta: spinner no resumo e em
+  cada linha, checkboxes e "Selecionar Todos" desabilitados, janela respondendo) e `14-autodescoberta-check-x` (✔ verde no
+  VS Code e no Code::Blocks, ❌ vermelho no Python com o caminho completo procurado, checkbox dele bloqueada, "2 de 3
+  encontrado(s) na rede · 1 não encontrado(s)" em vermelho, "Selecionar Todos" marcou só os 2 encontrados).
