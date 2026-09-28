@@ -8,9 +8,10 @@
 | Ciclo | O que foi feito | Resultado |
 |---|---|---|
 | 0 | Leitura de `MainViewModel`, `InstallQueue`, `ProcessRunner`, `MainWindow.xaml` e dos testes de tela. Diagnóstico abaixo. | Causa do contador encontrada |
-| 1 | Implementação das 5 partes + 22 testes novos no Linux e 2 testes de tela novos para o Windows. Versão 0.2.0. | Build Release ok; **101 testes ok no Linux** (1 pulado, só Windows). _CI Windows em andamento_ |
+| 1 | Implementação das 5 partes + 22 testes novos no Linux e 2 testes de tela novos para o Windows. Versão 0.2.0. | Build Release ok; 101 testes ok no Linux. CI Windows: 3 testes de tela falharam ao carregar o XAML (seção 6) |
+| 2 | Spinner sem `x:Name` no `BeginStoryboard` (parada por animação que substitui a infinita). | _CI Windows em andamento_ |
 
-Tentativas de corrigir o mesmo bug no WPF/XAML: **0 de 5**.
+Tentativas de corrigir o mesmo bug no WPF/XAML: **1 de 5** (spinner).
 
 ## 1) Correção do Contador (Ajuste no ViewModel)
 
@@ -65,4 +66,9 @@ Tentativas de corrigir o mesmo bug no WPF/XAML: **0 de 5**.
 
 - Ciclo 1: nenhuma falha de compilação. Um teste antigo (`Cancelar_InterrompeOAtualEMarcaORestanteComoCancelado`) assumia
   que o 1º instalador começava antes do `await`; com a fila em `Task.Run` o teste agora espera o 1º começar antes de cancelar.
-- Aguardando o CI Windows (telas reais e `.exe` real).
+- **Ciclo 1, CI Windows:** a janela não abria: `XamlParseException: 'GirarSpinner' name cannot be found in the name scope of
+  'System.Windows.Style'`. O XAML é carregado pelo `XamlReader` (sem compilação BAML), e aí o `x:Name` de um `BeginStoryboard`
+  dentro do `Style` não é registrado para o `StopStoryboard`. Não dá para ver isso no Linux (sem WPF).
+- **Correção (ciclo 2, tentativa 1 de 5):** `BeginStoryboard` sem nome; ao sumir, outra animação instantânea
+  (`SnapshotAndReplace`, `FillBehavior=Stop`) substitui a infinita e para o giro.
+- Aguardando o CI Windows do ciclo 2.

@@ -43,6 +43,8 @@
     <!--
       Spinner: um arco girando enquanto o elemento está visível (a animação para quando ele some).
       Cada spinner declara o próprio RotateTransform (não congelado) para poder ser animado.
+      Sem x:Name no BeginStoryboard: no XAML carregado pelo XamlReader o nome não entra no escopo do Style.
+      Para parar, a saída inicia uma animação instantânea que substitui a infinita (SnapshotAndReplace) e se remove.
     -->
     <Style x:Key="Spinner" TargetType="Grid">
       <Setter Property="Width" Value="18" />
@@ -52,7 +54,7 @@
       <Style.Triggers>
         <Trigger Property="IsVisible" Value="True">
           <Trigger.EnterActions>
-            <BeginStoryboard x:Name="GirarSpinner">
+            <BeginStoryboard>
               <Storyboard>
                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
                                  From="0" To="360" Duration="0:0:0.9" RepeatBehavior="Forever" />
@@ -60,7 +62,12 @@
             </BeginStoryboard>
           </Trigger.EnterActions>
           <Trigger.ExitActions>
-            <StopStoryboard BeginStoryboardName="GirarSpinner" />
+            <BeginStoryboard HandoffBehavior="SnapshotAndReplace">
+              <Storyboard FillBehavior="Stop">
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                 To="0" Duration="0" />
+              </Storyboard>
+            </BeginStoryboard>
           </Trigger.ExitActions>
         </Trigger>
       </Style.Triggers>
