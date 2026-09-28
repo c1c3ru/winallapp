@@ -3,13 +3,15 @@
 > Fonte de verdade da refatoração de UX do instalador: contador, campo da pasta de rede, pesquisa,
 > spinner e alertas de erro. Branch: `claude/ux-instalador`. Atualizado a cada ciclo.
 
+**Situação: concluído.** Contador, pesquisa, campo de rede, spinner e alertas conferidos na janela WPF real (capturas 09 a 12 no branch `capturas-ci`).
+
 ## Histórico de ciclos
 
 | Ciclo | O que foi feito | Resultado |
 |---|---|---|
 | 0 | Leitura de `MainViewModel`, `InstallQueue`, `ProcessRunner`, `MainWindow.xaml` e dos testes de tela. Diagnóstico abaixo. | Causa do contador encontrada |
 | 1 | Implementação das 5 partes + 22 testes novos no Linux e 2 testes de tela novos para o Windows. Versão 0.2.0. | Build Release ok; 101 testes ok no Linux. CI Windows: 3 testes de tela falharam ao carregar o XAML (seção 6) |
-| 2 | Spinner sem `x:Name` no `BeginStoryboard` (parada por animação que substitui a infinita). | _CI Windows em andamento_ |
+| 2 | Spinner sem `x:Name` no `BeginStoryboard` (parada por animação que substitui a infinita). | **CI Windows verde** (commit `96a11c1`): telas reais, `.exe` real e todos os testes. Condição de parada atingida |
 
 Tentativas de corrigir o mesmo bug no WPF/XAML: **1 de 5** (spinner).
 
@@ -71,4 +73,7 @@ Tentativas de corrigir o mesmo bug no WPF/XAML: **1 de 5** (spinner).
   dentro do `Style` não é registrado para o `StopStoryboard`. Não dá para ver isso no Linux (sem WPF).
 - **Correção (ciclo 2, tentativa 1 de 5):** `BeginStoryboard` sem nome; ao sumir, outra animação instantânea
   (`SnapshotAndReplace`, `FillBehavior=Stop`) substitui a infinita e para o giro.
-- Aguardando o CI Windows do ciclo 2.
+- **Ciclo 2:** CI Windows verde. Capturas conferidas: `10-pesquisa` (filtro "code", 3 de 3 marcados com o Python escondido),
+  `11-instalando-spinner` (spinner no rodapé e na linha, contador "1 de 3 · 0 instalado(s) · 1 falha(s)" em vermelho,
+  linha com falha em vermelho com o motivo), `12-falha-alerta` (faixa vermelha listando o programa que falhou, contador final
+  "3 de 3 · 2 instalado(s) · 1 falha(s)") e `09-rede-inacessivel`.
