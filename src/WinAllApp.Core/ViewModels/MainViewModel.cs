@@ -36,6 +36,9 @@ namespace WinAllApp.Core.ViewModels
         private IReadOnlyList<ProgramaItemViewModel> _itensDaFila = Array.Empty<ProgramaItemViewModel>();
         private readonly ConcurrentQueue<Action> _avisosPendentes = new ConcurrentQueue<Action>();
         private readonly object _travaAvisos = new object();
+        private CancellationTokenSource _cancelamentoBusca;
+        private Task _verificacaoArquivos = Task.CompletedTask;
+        private bool _verificandoArquivos;
 
         public MainViewModel(InstallerConfig config, string pastaInstaladores, IProcessRunner runner)
             : this(new LabCatalog(config), new InstallQueue(runner, pastaInstaladores))
@@ -55,7 +58,7 @@ namespace WinAllApp.Core.ViewModels
             Log = new ObservableCollection<string>();
             _pastaRede = Contexto.PastaInstaladores;
 
-            SelecionarTodosCommand = new RelayCommand(SelecionarExibidos, () => !Ocupado && ProgramasVisiveis.Count > 0);
+            SelecionarTodosCommand = new RelayCommand(SelecionarExibidos, () => !Ocupado && ProgramasVisiveis.Any(p => p.PodeSelecionar));
             LimparSelecaoCommand = new RelayCommand(() => DefinirSelecao(false), () => !Ocupado && TotalSelecionados > 0);
             InstalarCommand = new AsyncRelayCommand(InstalarAsync, () => !Ocupado && TotalSelecionados > 0);
             CancelarCommand = new RelayCommand(Cancelar, () => Ocupado && _cancelamento != null && !_cancelamento.IsCancellationRequested);
@@ -120,6 +123,8 @@ namespace WinAllApp.Core.ViewModels
                 PastaRedeAcessivel = null;
                 PastaRedeStatus = "Pasta de rede alterada: clique em Verificar para testar o acesso.";
                 if (_erroDaRede) LimparErro();
+                // Autodescoberta: confere de novo os instaladores quando o técnico para de digitar.
+                IniciarVerificacaoArquivos(AtrasoAposDigitar);
             }
         }
 
@@ -165,6 +170,7 @@ namespace WinAllApp.Core.ViewModels
 
             VerificandoPastaRede = true;
             PastaRedeStatus = "Verificando a pasta de rede…";
+            IniciarVerificacaoArquivos(TimeSpan.Zero); // o botão também confere de novo cada instalador da lista
             var existe = Contexto.PastaExiste;
             bool ok;
             string detalhe = null;
@@ -202,6 +208,175 @@ namespace WinAllApp.Core.ViewModels
                 MostrarErro("Não foi possível acessar a pasta de rede: " + pasta +
                             ". Confira o caminho no campo \"Pasta de rede\" e se este computador está na rede do campus.", daRede: true);
             }
+        }
+
+        // ===== Autodescoberta dos instaladores =====
+
+        /// <summary>Tempo máximo de cada consulta à rede (servidor desligado vira ❌ "sem resposta" em vez de travar).</summary>
+        public TimeSpan TimeoutPorArquivo { get; set; } = ConfigLoader.TimeoutVerificacaoPadrao;
+
+        /// <summary>Espera depois da última tecla no campo "Pasta de rede" antes de conferir de novo.</summary>
+        public TimeSpan AtrasoAposDigitar { get; set; } = TimeSpan.FromMilliseconds(600);
+
+        /// <summary>A verificação em andamento (ou a última). Os testes aguardam por ela.</summary>
+        public Task VerificacaoArquivos => _verificacaoArquivos;
+
+        /// <summary>Verdadeiro enquanto os instaladores são procurados na rede (spinner ao lado do resumo).</summary>
+        public bool VerificandoArquivos
+        {
+            get => _verificandoArquivos;
+            private set
+            {
+                if (!Set(ref _verificandoArquivos, value)) return;
+                OnPropertyChanged(nameof(ResumoDisponibilidade));
+            }
+        }
+
+        public int TotalEncontrados => Programas.Count(p => p.Encontrado);
+        public int TotalNaoEncontrados => Programas.Count(p => p.NaoEncontrado);
+        public bool TemNaoEncontrados => TotalNaoEncontrados > 0;
+
+        /// <summary>Ex.: "Procurando os instaladores na rede…" ou "12 de 15 encontrado(s) na rede · 3 não encontrado(s)".</summary>
+        public string ResumoDisponibilidade
+        {
+            get
+            {
+                if (Programas.Count == 0) return string.Empty;
+                if (VerificandoArquivos) return "Procurando os instaladores na rede…";
+                var faltam = TotalNaoEncontrados;
+                return $"{TotalEncontrados} de {Programas.Count} encontrado(s) na rede"
+                       + (faltam > 0 ? $" · {faltam} não encontrado(s)" : string.Empty);
+            }
+        }
+
+        /// <summary>Confere agora (sem esperar digitação) todos os instaladores do laboratório aberto.</summary>
+        public Task VerificarArquivosAsync()
+        {
+            IniciarVerificacaoArquivos(TimeSpan.Zero);
+            return _verificacaoArquivos;
+        }
+
+        /// <summary>
+        /// Cancela a verificação anterior, põe os itens em "buscando" e começa outra. Chamado na thread da tela;
+        /// as consultas à rede rodam em segundo plano e cada veredito volta para a tela assim que sai (Progress).
+        /// </summary>
+        private void IniciarVerificacaoArquivos(TimeSpan atraso)
+        {
+            _cancelamentoBusca?.Cancel();
+            var itens = Programas.ToList();
+            if (itens.Count == 0)
+            {
+                _cancelamentoBusca = null;
+                _verificacaoArquivos = Task.CompletedTask;
+                VerificandoArquivos = false;
+                return;
+            }
+
+            var cancelamento = new CancellationTokenSource();
+            _cancelamentoBusca = cancelamento;
+            foreach (var item in itens) item.MarcarBuscando();
+            VerificandoArquivos = true;
+            NotificarDisponibilidade();
+            _verificacaoArquivos = ExecutarVerificacaoAsync(itens, atraso, cancelamento);
+        }
+
+        private async Task ExecutarVerificacaoAsync(IReadOnlyList<ProgramaItemViewModel> itens, TimeSpan atraso, CancellationTokenSource cancelamento)
+        {
+            var token = cancelamento.Token;
+            try
+            {
+                if (atraso > TimeSpan.Zero) await Task.Delay(atraso, token);
+
+                var pasta = Contexto.PastaInstaladores;
+                var porAlvo = new Dictionary<AlvoVerificacao, ProgramaItemViewModel>();
+                foreach (var item in itens)
+                {
+                    var alvo = ConfigLoader.CaminhoNaRede(item.Programa, pasta);
+                    if (alvo != null && string.IsNullOrWhiteSpace(pasta) && !System.IO.Path.IsPathRooted(item.Programa.Instalador))
+                    {
+                        // Campo vazio: não há onde procurar (e não se procura na pasta do próprio app).
+                        if (alvo.TemAlternativa) item.DefinirDisponibilidade(true, "Não está na rede: instala pelo winget/Chocolatey.");
+                        else item.DefinirDisponibilidade(false, "Pasta de rede não informada: preencha o campo \"Pasta de rede\".");
+                    }
+                    else if (alvo != null) porAlvo[alvo] = item;
+                    else if (item.Categoria == CategoriaInstalacao.Gerenciador) item.DefinirDisponibilidade(true, "Instala pelo winget/Chocolatey (sem arquivo na rede).");
+                    else item.DefinirDisponibilidade(false, "Sem caminho de instalador no config.json.");
+                }
+
+                // Progress: cada veredito volta para a thread da tela assim que sai, sem esperar os outros.
+                var progresso = new Progress<ResultadoVerificacao>(r =>
+                {
+                    if (!token.IsCancellationRequested && r.Alvo != null && porAlvo.TryGetValue(r.Alvo, out var item))
+                        AplicarVerificacao(item, r, pasta);
+                });
+
+                var resultados = await ConfigLoader.VerificarCaminhosAsync(porAlvo.Keys, pasta, Contexto.ArquivoExiste, Contexto.PastaExiste,
+                    TimeoutPorArquivo, progresso, token);
+
+                // Garante o estado final mesmo que algum aviso do Progress ainda esteja na fila da tela.
+                if (token.IsCancellationRequested) return;
+                foreach (var r in resultados) AplicarVerificacao(porAlvo[r.Alvo], r, pasta);
+
+                var faltando = itens.Where(i => i.NaoEncontrado).ToList();
+                if (faltando.Count > 0)
+                    AdicionarLog($"Autodescoberta: {faltando.Count} de {itens.Count} instalador(es) não encontrado(s) na rede: " +
+                                 string.Join(", ", faltando.Select(i => i.Nome)) + ".");
+            }
+            catch (OperationCanceledException)
+            {
+                // Outra verificação começou (pasta editada, outro laboratório): esta perdeu a validade.
+            }
+            catch (Exception ex)
+            {
+                if (token.IsCancellationRequested) return;
+                foreach (var item in itens.Where(i => i.Buscando))
+                    item.DefinirDisponibilidade(false, "Erro ao procurar na rede: " + ex.Message);
+                AdicionarLog("Autodescoberta: erro inesperado: " + ex.Message);
+            }
+            finally
+            {
+                if (ReferenceEquals(_cancelamentoBusca, cancelamento))
+                {
+                    VerificandoArquivos = false;
+                    NotificarDisponibilidade();
+                }
+            }
+        }
+
+        private void AplicarVerificacao(ProgramaItemViewModel item, ResultadoVerificacao r, string pasta)
+        {
+            var alvo = r.Alvo;
+            if (r.Encontrado)
+                item.DefinirDisponibilidade(true, alvo.EhPasta ? "Pasta encontrada na rede" : "Encontrado na rede", r.Caminho);
+            else if (alvo.TemAlternativa)
+                item.DefinirDisponibilidade(true, "Não está na rede: instala pelo winget/Chocolatey.", r.Caminho);
+            else
+                item.DefinirDisponibilidade(false, MotivoNaoEncontrado(r, pasta), r.Caminho);
+            NotificarDisponibilidade();
+        }
+
+        private string MotivoNaoEncontrado(ResultadoVerificacao r, string pasta)
+        {
+            var segundos = Math.Max(1, (int)Math.Round(TimeoutPorArquivo.TotalSeconds));
+            if (r.PastaBaseInacessivel)
+                return r.Status == StatusArquivo.SemResposta
+                    ? $"A pasta de rede não respondeu em {segundos} s: {pasta}"
+                    : $"Pasta de rede inacessível: {pasta}" + (r.Detalhe == null ? string.Empty : $" ({r.Detalhe})");
+            switch (r.Status)
+            {
+                case StatusArquivo.SemResposta: return $"A rede não respondeu em {segundos} s: {r.Caminho}";
+                case StatusArquivo.Erro: return $"Erro ao acessar {r.Caminho}: {r.Detalhe}";
+                default: return (r.Alvo.EhPasta ? "Pasta não encontrada na rede: " : "Não encontrado na rede: ") + r.Caminho;
+            }
+        }
+
+        private void NotificarDisponibilidade()
+        {
+            OnPropertyChanged(nameof(TotalEncontrados));
+            OnPropertyChanged(nameof(TotalNaoEncontrados));
+            OnPropertyChanged(nameof(TemNaoEncontrados));
+            OnPropertyChanged(nameof(ResumoDisponibilidade));
+            SelecionarTodosCommand.NotificarMudanca();
         }
 
         // ===== Pesquisa =====
@@ -511,6 +686,7 @@ namespace WinAllApp.Core.ViewModels
 
             if (lab != null) StatusTexto = $"{Programas.Count} programa(s) em {lab.Nome}. Marque os que deseja instalar.";
             AplicarFiltro();
+            IniciarVerificacaoArquivos(TimeSpan.Zero);
         }
 
         /// <summary>Refaz a lista exibida a partir de Programas (LINQ), mantendo a ordem e os mesmos objetos.</summary>
@@ -530,7 +706,7 @@ namespace WinAllApp.Core.ViewModels
         /// <summary>Marca o que está na tela: sem pesquisa, o laboratório inteiro; com pesquisa, só os exibidos.</summary>
         private void SelecionarExibidos()
         {
-            foreach (var item in ProgramasVisiveis) item.Selecionado = true;
+            foreach (var item in ProgramasVisiveis.Where(i => i.PodeSelecionar)) item.Selecionado = true;
         }
 
         private void DefinirSelecao(bool marcado)

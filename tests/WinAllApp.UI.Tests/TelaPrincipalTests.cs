@@ -78,8 +78,9 @@ namespace WinAllApp.UI.Tests
                     comboBlocos.SelectedIndex = 0;
                     Processar();
                     listaLabs.SelectedIndex = 0;
-                    Processar();
+                    Processar(() => vm.Programas.All(p => !p.Buscando), TimeSpan.FromSeconds(10));
                     var caixas = CheckBoxes(listaProgramas);
+                    Assert.All(caixas, c => Assert.True(c.IsEnabled)); // os 3 instaladores foram encontrados (✔)
                     Assert.Equal(new[] { "Visual Studio Code", "Python", "Code::Blocks" }, caixas.Select(Rotulo));
                     Assert.All(caixas, c => Assert.False(c.IsChecked == true));
 
@@ -196,7 +197,8 @@ namespace WinAllApp.UI.Tests
                     Processar(() => vm.PastaRedeAcessivel.HasValue, TimeSpan.FromSeconds(10));
                     vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL1");
                     vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "WIN7");
-                    Processar();
+                    Processar(() => !vm.VerificandoArquivos, TimeSpan.FromSeconds(10));
+                    Assert.All(vm.Programas, p => Assert.True(p.Encontrado, p.StatusBusca)); // .bat da simulação existem
 
                     Assert.NotNull(((Image)janela.FindName("ImagemLogo")).Source);
                     Assert.True(vm.PastaRedeAcessivel == true, vm.PastaRedeStatus);
@@ -263,10 +265,12 @@ namespace WinAllApp.UI.Tests
                     Assert.Equal(@"\\10.50.11.2\informatica\Outra Pasta", fila.Roteador.Contexto.PastaInstaladores);
                     Assert.False(faixaErro.IsVisible);
                     campoRede.Text = ContextoInstalacao.PastaRedePadrao;
+                    fila.Roteador.Contexto.PastaExiste = _ => true; // a rede voltou
 
                     vm.BlocoSelecionado = vm.Blocos[0];
                     vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "LCC");
-                    Processar();
+                    Processar(() => !vm.VerificandoArquivos && vm.Programas.All(p => p.Encontrado), TimeSpan.FromSeconds(10));
+                    Assert.All(vm.Programas, p => Assert.True(p.Encontrado, p.StatusBusca));
 
                     // Marca o Python, filtra por "code": ele some da lista mas continua marcado.
                     CheckBoxes(listaProgramas).Single(c => Rotulo(c) == "Python").IsChecked = true;
@@ -311,6 +315,106 @@ namespace WinAllApp.UI.Tests
                     janela.Close();
                 }
             });
+        }
+
+        /// <summary>
+        /// Autodescoberta na janela real: com a rede lenta a lista mostra "procurando" (spinner) e a janela continua
+        /// respondendo; depois cada linha ganha ✔ verde (checkbox habilitada) ou ❌ vermelho (checkbox bloqueada).
+        /// </summary>
+        [Fact]
+        public void Autodescoberta_MostraBuscandoDepoisCheckOuXEBloqueiaOQueFalta()
+        {
+            RodarEmSta(() =>
+            {
+                SynchronizationContext.SetSynchronizationContext(null); // como no .exe: ViewModel antes do loop da tela
+                var carga = ConfigLoader.CarregarArquivo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestData", "config.teste.json"));
+                var fila = new InstallQueue(new RunnerFalso(), ContextoInstalacao.PastaRedePadrao);
+                var liberar = new ManualResetEventSlim();
+                fila.Roteador.Contexto.PastaExiste = _ => true;
+                fila.Roteador.Contexto.ArquivoExiste = f =>
+                {
+                    liberar.Wait(TimeSpan.FromSeconds(20)); // servidor lento
+                    return !f.EndsWith("python-setup.exe", StringComparison.OrdinalIgnoreCase);
+                };
+                var vm = new MainViewModel(new LabCatalog(carga.Config), fila);
+                SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+
+                var janela = WindowFactory.CriarJanelaPrincipal(vm);
+                janela.ShowActivated = false;
+                janela.ShowInTaskbar = false;
+                janela.Show();
+                try
+                {
+                    var listaProgramas = (ItemsControl)janela.FindName("ListaProgramas");
+                    var spinnerDescoberta = (FrameworkElement)janela.FindName("SpinnerDescoberta");
+                    var textoDisponibilidade = (TextBlock)janela.FindName("TextoDisponibilidade");
+                    var selecionarTodos = (Button)janela.FindName("BotaoSelecionarTodos");
+
+                    vm.BlocoSelecionado = vm.Blocos[0];
+                    vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "LCC");
+
+                    // Rede lenta: a janela processa mensagens, mostra "procurando" e nada pode ser marcado ainda.
+                    var inicio = DateTime.UtcNow;
+                    Processar();
+                    Assert.True(DateTime.UtcNow - inicio < TimeSpan.FromSeconds(3), "A janela travou durante a busca na rede.");
+                    Assert.True(spinnerDescoberta.IsVisible);
+                    Assert.Equal("Procurando os instaladores na rede…", textoDisponibilidade.Text);
+                    Assert.All(CheckBoxes(listaProgramas), c =>
+                    {
+                        Assert.False(c.IsEnabled);
+                        Assert.True(Icone(c, "SpinnerBusca").IsVisible);
+                    });
+                    Assert.False(selecionarTodos.IsEnabled);
+                    Capturar(janela, "13-autodescoberta-procurando.png");
+
+                    liberar.Set();
+                    Processar(() => !vm.VerificandoArquivos, TimeSpan.FromSeconds(15));
+                    Processar();
+
+                    Assert.False(spinnerDescoberta.IsVisible);
+                    Assert.Equal("2 de 3 encontrado(s) na rede · 1 não encontrado(s)", textoDisponibilidade.Text);
+                    foreach (var caixa in CheckBoxes(listaProgramas))
+                    {
+                        var item = (ProgramaItemViewModel)caixa.DataContext;
+                        var achou = item.Programa.Id != "python";
+                        Assert.Equal(achou, caixa.IsEnabled);
+                        Assert.Equal(achou, Icone(caixa, "IconeEncontrado").IsVisible);
+                        Assert.Equal(!achou, Icone(caixa, "IconeNaoEncontrado").IsVisible);
+                        Assert.False(Icone(caixa, "SpinnerBusca").IsVisible);
+                    }
+                    var python = vm.Programas.Single(p => p.Programa.Id == "python");
+                    Assert.StartsWith("Não encontrado na rede: " + ContextoInstalacao.PastaRedePadrao, python.StatusBusca);
+
+                    // "Selecionar Todos" pula o que não foi encontrado.
+                    Assert.True(selecionarTodos.IsEnabled);
+                    selecionarTodos.Command.Execute(null);
+                    Processar();
+                    Assert.Equal(2, vm.TotalSelecionados);
+                    Assert.False(python.Selecionado);
+                    Assert.False(CheckBoxes(listaProgramas).Single(c => Rotulo(c) == "Python").IsChecked == true);
+                    Capturar(janela, "14-autodescoberta-check-x.png");
+                }
+                finally
+                {
+                    liberar.Set();
+                    janela.Close();
+                }
+            });
+        }
+
+        /// <summary>O ícone (✔, ❌ ou spinner) de uma linha, achado pelo estilo do XAML.</summary>
+        private static FrameworkElement Icone(CheckBox caixa, string estilo)
+        {
+            var alvo = caixa.FindResource(estilo);
+            var pilha = new Stack<DependencyObject>();
+            pilha.Push(caixa);
+            while (pilha.Count > 0)
+            {
+                var atual = pilha.Pop();
+                if (atual is FrameworkElement fe && ReferenceEquals(fe.Style, alvo)) return fe;
+                for (var i = VisualTreeHelper.GetChildrenCount(atual) - 1; i >= 0; i--) pilha.Push(VisualTreeHelper.GetChild(atual, i));
+            }
+            throw new InvalidOperationException("Ícone não encontrado: " + estilo);
         }
 
         private sealed class RunnerComFalha : IProcessRunner

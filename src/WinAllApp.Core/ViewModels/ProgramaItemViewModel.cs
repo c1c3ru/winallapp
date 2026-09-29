@@ -12,6 +12,11 @@ namespace WinAllApp.Core.ViewModels
         private bool _selecionado;
         private EstadoInstalacao _estado = EstadoInstalacao.Pendente;
         private string _mensagem;
+        private bool? _isAvailable;
+        private string _statusBusca = TextoBuscando;
+        private string _caminhoNaRede;
+
+        public const string TextoBuscando = "Procurando na rede…";
 
         public ProgramaItemViewModel(Programa programa, AmbienteSistema ambiente = null)
         {
@@ -48,13 +53,75 @@ namespace WinAllApp.Core.ViewModels
 
         public event EventHandler SelecaoAlterada;
 
+        /// <summary>
+        /// Marcado para instalar. Só aceita marcar quando o instalador foi encontrado (<see cref="PodeSelecionar"/>):
+        /// vale para o clique na checkbox e para "Selecionar Todos". Desmarcar é sempre permitido.
+        /// </summary>
         public bool Selecionado
         {
             get => _selecionado;
             set
             {
+                if (value && !PodeSelecionar)
+                {
+                    OnPropertyChanged(); // devolve a checkbox ao estado real
+                    return;
+                }
                 if (Set(ref _selecionado, value)) SelecaoAlterada?.Invoke(this, EventArgs.Empty);
             }
+        }
+
+        // ===== Autodescoberta: o instalador existe na pasta de rede? =====
+
+        /// <summary>null = buscando na rede; true = encontrado (✔, pode marcar); false = não encontrado (❌, bloqueado).</summary>
+        public bool? IsAvailable
+        {
+            get => _isAvailable;
+            private set
+            {
+                if (!Set(ref _isAvailable, value)) return;
+                OnPropertyChanged(nameof(Buscando));
+                OnPropertyChanged(nameof(Encontrado));
+                OnPropertyChanged(nameof(NaoEncontrado));
+                OnPropertyChanged(nameof(PodeSelecionar));
+            }
+        }
+
+        public bool Buscando => IsAvailable == null;
+        public bool Encontrado => IsAvailable == true;
+        public bool NaoEncontrado => IsAvailable == false;
+
+        /// <summary>A checkbox só fica habilitada com o instalador encontrado.</summary>
+        public bool PodeSelecionar => IsAvailable == true;
+
+        /// <summary>Ex.: "Encontrado na rede", "Não encontrado na rede: \\servidor\...\setup.exe".</summary>
+        public string StatusBusca
+        {
+            get => _statusBusca;
+            private set => Set(ref _statusBusca, value);
+        }
+
+        /// <summary>Caminho conferido (Caminho Base + caminho do JSON); aparece na dica da linha.</summary>
+        public string CaminhoNaRede
+        {
+            get => _caminhoNaRede;
+            private set => Set(ref _caminhoNaRede, value);
+        }
+
+        /// <summary>Volta ao estado "buscando" (nova verificação). A marcação fica até sair o veredito.</summary>
+        public void MarcarBuscando()
+        {
+            IsAvailable = null;
+            StatusBusca = TextoBuscando;
+        }
+
+        /// <summary>Veredito da verificação. Não encontrado desmarca o item.</summary>
+        public void DefinirDisponibilidade(bool disponivel, string status, string caminho = null)
+        {
+            CaminhoNaRede = caminho;
+            StatusBusca = status;
+            IsAvailable = disponivel;
+            if (!disponivel && Selecionado) Selecionado = false;
         }
 
         public EstadoInstalacao Estado

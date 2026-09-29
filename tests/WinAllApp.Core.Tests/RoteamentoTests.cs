@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using WinAllApp.Core.Models;
 using WinAllApp.Core.Services;
@@ -266,10 +267,12 @@ namespace WinAllApp.Core.Tests
                 var ambiente = AmbienteSistema.Simular(windows, Winget, Choco);
                 var roteador = new RoteadorInstalacao(new ContextoInstalacao(rede, Path.Combine(pasta, "local"), ambiente));
                 var runner = new RunnerFalso(c => c.Arquivo == Winget ? EstrategiaGerenciador.WingetJaInstalado : 0);
+                SynchronizationContext.SetSynchronizationContext(null);
                 var vm = new MainViewModel(new LabCatalog(config), new InstallQueue(runner, new CopiadorPastas(), roteador));
 
                 vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL1");
                 vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "MOTOR");
+                vm.AguardarAutodescoberta();
                 vm.SelecionarTodosCommand.Execute(null);
                 var resultados = await vm.InstalarAsync();
 
@@ -295,9 +298,11 @@ namespace WinAllApp.Core.Tests
             var config = ConfigMock();
             var roteador = new RoteadorInstalacao(new ContextoInstalacao(PastaRede, DestinoCopias, Win7()));
             var runner = new RunnerFalso();
+            SynchronizationContext.SetSynchronizationContext(null);
             var vm = new MainViewModel(new LabCatalog(config), new InstallQueue(runner, new CopiadorPastas(), roteador));
             vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL1");
             vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "WIN7");
+            vm.AguardarAutodescoberta();
 
             // Aviso aparece na lista antes de instalar.
             Assert.Contains("3.8.10", vm.Programas[0].AvisoCompatibilidade);

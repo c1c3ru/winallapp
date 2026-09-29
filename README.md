@@ -41,13 +41,20 @@ Ela é atualizada automaticamente a cada alteração que passa em todos os teste
       Clique em **Verificar**: aparece "Pasta de rede acessível" (verde) ou "INACESSÍVEL" com um alerta vermelho.
       A verificação roda em segundo plano (spinner ao lado do campo), sem travar a janela.
    3. **Instale em lote**: marque os programas (ou **Selecionar Todos do Laboratório**) e clique em **Instalar selecionados**.
-4. Use a **barra de pesquisa** para achar um programa pelo nome, versão ou categoria. O filtro é imediato e os itens
+4. **Autodescoberta**: ao abrir um laboratório (e ao editar o campo **Pasta de rede** ou clicar em **Verificar**) o app
+   procura em segundo plano cada instalador do `config.json` na pasta de rede:
+   - ✔ verde: o arquivo (ou a pasta, em `copia_pasta`) existe; a checkbox fica liberada.
+   - ❌ vermelho: não existe, ou a rede não respondeu em 5 s; a checkbox fica bloqueada e a linha mostra o caminho procurado.
+   - Spinner cinza: ainda procurando. A janela continua respondendo, e "Selecionar Todos" só marca os encontrados.
+   - `gerenciador` com `wingetId`/`chocoId` fica ✔ mesmo fora da rede (instala pelo winget/Chocolatey).
+   A busca só lê a rede: o `config.json` nunca é alterado.
+5. Use a **barra de pesquisa** para achar um programa pelo nome, versão ou categoria. O filtro é imediato e os itens
    marcados continuam marcados mesmo quando somem da lista. Com a pesquisa ativa, o botão vira **Selecionar os exibidos**.
-5. Durante a instalação um **spinner** gira no rodapé e na linha em andamento, e o **contador** mostra
+6. Durante a instalação um **spinner** gira no rodapé e na linha em andamento, e o **contador** mostra
    "concluídos de total · instalados · falhas". A janela continua respondendo.
-6. Se algo falhar, a linha fica vermelha com o **motivo**, e uma faixa vermelha no topo lista os programas que falharam.
+7. Se algo falhar, a linha fica vermelha com o **motivo**, e uma faixa vermelha no topo lista os programas que falharam.
    O **Registro da instalação** no rodapé guarda todos os detalhes.
-7. Programas **licenciados** (AutoCAD, MATLAB, Proteus…) ficam como "Instalado (ativar licença)": a ativação é feita depois, à mão.
+8. Programas **licenciados** (AutoCAD, MATLAB, Proteus…) ficam como "Instalado (ativar licença)": a ativação é feita depois, à mão.
 
 Marque **Não mostrar novamente** no tutorial para ele não abrir nas próximas vezes. A preferência fica em
 `%APPDATA%\WinAllApp\preferencias.ini` (nada é gravado ao lado do .exe).

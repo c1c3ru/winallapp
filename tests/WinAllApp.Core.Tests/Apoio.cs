@@ -117,4 +117,17 @@ namespace WinAllApp.Core.Tests
             return linhas;
         }
     }
+    /// <summary>Autodescoberta nos testes: espera os itens saírem de "buscando" (✔ ou ❌), como o técnico vê a lista pronta.</summary>
+    public static class Autodescoberta
+    {
+        /// <summary>
+        /// Espera a verificação dos instaladores terminar. Use com o contexto de sincronização nulo (os vereditos são
+        /// aplicados direto na thread do pool), senão a espera poderia prender a thread que aplicaria o resultado.
+        /// </summary>
+        public static void AguardarAutodescoberta(this WinAllApp.Core.ViewModels.MainViewModel vm)
+        {
+            Assert.True(vm.VerificacaoArquivos.Wait(TimeSpan.FromSeconds(20)), "A autodescoberta dos instaladores não terminou.");
+            Assert.DoesNotContain(vm.Programas, p => p.Buscando);
+        }
+    }
 }
