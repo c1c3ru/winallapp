@@ -32,10 +32,17 @@ namespace WinAllApp.Core.Tests
             return resultado;
         }
 
+        /// <summary>Falha mostrando a saída do PowerShell (os logs do Actions não são baixáveis; a anotação do teste é).</summary>
+        private static void Sucesso(ResultadoPowerShell resultado, params int[] aceitos)
+        {
+            if (aceitos.Length == 0) aceitos = new[] { 0 };
+            Assert.True(aceitos.Contains(resultado.Codigo), $"código {resultado.Codigo}: {resultado.Saida}");
+        }
+
         private async Task<Dictionary<string, string>> LerAsync(string corpo)
         {
             var resultado = await RodarAsync(ScriptsPadronizacao.Montar(corpo));
-            Assert.Equal(0, resultado.Codigo);
+            Sucesso(resultado);
             return resultado.Saida.Replace("\r", string.Empty).Split('\n')
                 .Where(l => l.Contains('='))
                 .Select(l => l.Split(new[] { '=' }, 2))
@@ -92,7 +99,7 @@ namespace WinAllApp.Core.Tests
             var resultado = await RodarAsync(ScriptsPadronizacao.VerificarSistema(),
                 new Dictionary<string, string> { [ScriptsPadronizacao.VarWindows] = SistemaPadronizacao.Nome(versao) });
 
-            Assert.Equal(0, resultado.Codigo);
+            Sucesso(resultado);
             Assert.Contains("executando como Administrador", resultado.Saida);
         }
 
@@ -103,7 +110,7 @@ namespace WinAllApp.Core.Tests
                 new Dictionary<string, string> { [ScriptsPadronizacao.VarChave] = "" });
 
             // Ativado (0) ou "não ativado, informe a chave" (2); nunca erro de script.
-            Assert.Contains(resultado.Codigo, new[] { 0, 2 });
+            Sucesso(resultado, 0, 2);
             Assert.Contains("RESULTADO:", resultado.Saida);
         }
 
@@ -129,7 +136,7 @@ namespace WinAllApp.Core.Tests
             try
             {
                 var contas = await RodarAsync(ScriptsPadronizacao.Contas(), variaveis);
-                Assert.Equal(0, contas.Codigo);
+                Sucesso(contas);
                 Assert.DoesNotContain(senha, contas.Saida);
 
                 var grupos = await LerAsync("""
@@ -149,13 +156,13 @@ namespace WinAllApp.Core.Tests
 
                 // Rodar de novo com as contas já existentes (técnico repetindo a padronização).
                 var denovo = await RodarAsync(ScriptsPadronizacao.Contas(), variaveis);
-                Assert.Contains(denovo.Codigo, new[] { 0, 2 });
+                Sucesso(denovo, 0, 2);
                 Assert.Contains("Conta Aluno ajustada", denovo.Saida);
 
                 var papel = await RodarAsync(ScriptsPadronizacao.PapelDeParede(), variaveis);
-                Assert.Equal(0, papel.Codigo);
+                Sucesso(papel);
                 var gpo = await RodarAsync(ScriptsPadronizacao.GposPersonalizacao(), variaveis);
-                Assert.Equal(0, gpo.Codigo);
+                Sucesso(gpo);
 
                 var registro = await LerAsync("""
                     $lista = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList'
@@ -220,8 +227,8 @@ namespace WinAllApp.Core.Tests
                 """);
             try
             {
-                Assert.Equal(0, (await RodarAsync(ScriptsPadronizacao.Uac())).Codigo);
-                Assert.Equal(0, (await RodarAsync(ScriptsPadronizacao.WindowsUpdate(versao))).Codigo);
+                Sucesso(await RodarAsync(ScriptsPadronizacao.Uac()));
+                Sucesso(await RodarAsync(ScriptsPadronizacao.WindowsUpdate(versao)));
 
                 var depois = await LerAsync("""
                     $s = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System'
@@ -259,7 +266,7 @@ namespace WinAllApp.Core.Tests
             try
             {
                 var resultado = await RodarAsync(ScriptsPadronizacao.Impressora(), variaveis);
-                Assert.Equal(0, resultado.Codigo);
+                Sucesso(resultado);
 
                 var impressora = await LerAsync("""
                     $p = Get-Printer -Name 'WinAllApp Teste'
@@ -273,7 +280,7 @@ namespace WinAllApp.Core.Tests
                 Assert.Contains(impressora["DRIVER"], ScriptsPadronizacao.DriversGenericos);
 
                 // Repetir não duplica nada.
-                Assert.Equal(0, (await RodarAsync(ScriptsPadronizacao.Impressora(), variaveis)).Codigo);
+                Sucesso(await RodarAsync(ScriptsPadronizacao.Impressora(), variaveis));
             }
             finally
             {
@@ -299,7 +306,7 @@ namespace WinAllApp.Core.Tests
                 var resultado = await RodarAsync(ScriptsPadronizacao.LimparAreaDeTrabalho(),
                     new Dictionary<string, string> { [ScriptsPadronizacao.VarExecutavel] = app });
 
-                Assert.Equal(0, resultado.Codigo);
+                Sucesso(resultado);
                 Assert.False(File.Exists(atalho));
                 Assert.False(File.Exists(instalador));
                 Assert.True(File.Exists(nota));
@@ -318,7 +325,7 @@ namespace WinAllApp.Core.Tests
             var resultado = await RodarAsync(ScriptsPadronizacao.RenomearComputador(),
                 new Dictionary<string, string> { [ScriptsPadronizacao.VarNome] = Environment.MachineName });
 
-            Assert.Equal(0, resultado.Codigo);
+            Sucesso(resultado);
             Assert.Contains("já se chama", resultado.Saida);
         }
     }

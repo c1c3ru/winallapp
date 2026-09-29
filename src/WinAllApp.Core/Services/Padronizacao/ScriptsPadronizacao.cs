@@ -388,7 +388,7 @@ namespace WinAllApp.Core.Services.Padronizacao
 
         /// <summary>
         /// Tópico 9.7: tira atalhos (.lnk, .url) e instaladores (.exe, .msi) das áreas de trabalho de todas as contas.
-        /// Nunca apaga o próprio WinAllApp.exe.
+        /// Nunca apaga o próprio WinAllApp.exe (nem outra cópia WinAllApp*.exe).
         /// </summary>
         public static string LimparAreaDeTrabalho() => Montar("""
                 $manter = [string]$env:WINALLAPP_EXECUTAVEL
@@ -408,7 +408,7 @@ namespace WinAllApp.Core.Services.Padronizacao
                     Get-ChildItem -LiteralPath $pasta -File -Force -ErrorAction SilentlyContinue | ForEach-Object {
                         if ($extensoes -notcontains $_.Extension.ToLowerInvariant()) { return }
                         if ($manter -and $_.FullName -ieq $manter) { return }
-                        if ($_.Name -like 'WinAllApp*') { return }
+                        if ($_.Extension -ieq '.exe' -and $_.Name -like 'WinAllApp*') { return }
                         Remove-Item -LiteralPath $_.FullName -Force
                         $script:removidos++
                         Write-Output ('Removido: ' + $_.FullName)

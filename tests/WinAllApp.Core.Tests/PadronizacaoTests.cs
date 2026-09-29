@@ -420,7 +420,7 @@ namespace WinAllApp.Core.Tests
             Assert.Contains("@('.lnk', '.url', '.exe', '.msi')", limpeza.Script);
             Assert.Contains("CommonDesktopDirectory", limpeza.Script);
             Assert.Contains("$_.FullName -ieq $manter", limpeza.Script);
-            Assert.Contains("-like 'WinAllApp*'", limpeza.Script);
+            Assert.Contains("$_.Extension -ieq '.exe' -and $_.Name -like 'WinAllApp*'", limpeza.Script);
 
             opcoes.LimparAreaDeTrabalho = false;
             Assert.DoesNotContain(Planejar(opcoes, VersaoPadronizacao.Windows10), e => e.Id == "limpeza");
