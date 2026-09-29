@@ -142,9 +142,9 @@ namespace WinAllApp.Core.Tests
                 var grupos = await LerAsync("""
                     Add-Type -AssemblyName System.DirectoryServices.AccountManagement
                     $adm = (New-Object Security.Principal.SecurityIdentifier('S-1-5-32-544')).Translate([Security.Principal.NTAccount]).Value.Split('\')[-1]
-                    $g = [ADSI]('WinNT://' + $env:COMPUTERNAME + '/' + $adm + ',group')
-                    Write-Output ('INFORMATICA_ADMIN=' + $g.Invoke('IsMember', ('WinNT://' + $env:COMPUTERNAME + '/Informatica')))
-                    Write-Output ('ALUNO_ADMIN=' + $g.Invoke('IsMember', ('WinNT://' + $env:COMPUTERNAME + '/Aluno')))
+                    $membros = (& net.exe localgroup $adm) | ForEach-Object { $_.Trim() }
+                    Write-Output ('INFORMATICA_ADMIN=' + ($membros -contains 'Informatica'))
+                    Write-Output ('ALUNO_ADMIN=' + ($membros -contains 'Aluno'))
                     Write-Output ('ALUNO_EXISTE=' + [bool](Get-CimInstance -ClassName Win32_UserAccount -Filter "LocalAccount=True AND Name='Aluno'"))
                     $maquina = New-Object System.DirectoryServices.AccountManagement.PrincipalContext('Machine')
                     Write-Output ('SENHA_OK=' + $maquina.ValidateCredentials('Informatica', $env:WINALLAPP_SENHA_TESTE))

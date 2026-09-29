@@ -157,9 +157,14 @@ namespace WinAllApp.Core.Services.Padronizacao
                 $usuarios = NomeDoGrupo 'S-1-5-32-545'
                 $maquina = $env:COMPUTERNAME
 
+                # Compara pelo ADsPath dos membros (WinNT://GRUPODETRABALHO/MAQUINA/conta); IsMember não reconhece contas locais.
                 function EstaNoGrupo([string]$grupo, [string]$conta) {
                     $g = [ADSI]('WinNT://' + $maquina + '/' + $grupo + ',group')
-                    return [bool]$g.Invoke('IsMember', ('WinNT://' + $maquina + '/' + $conta))
+                    foreach ($membro in @($g.Invoke('Members'))) {
+                        $caminho = $membro.GetType().InvokeMember('ADsPath', 'GetProperty', $null, $membro, $null)
+                        if ($caminho -like ('*/' + $maquina + '/' + $conta)) { return $true }
+                    }
+                    return $false
                 }
 
                 # [ADSI]::Exists lança "The user name could not be found" em vez de devolver falso no provedor WinNT.
