@@ -5,6 +5,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Threading;
 using WinAllApp.Core.Services;
+using WinAllApp.Core.Services.Padronizacao;
 using WinAllApp.Core.ViewModels;
 
 namespace WinAllApp
@@ -77,6 +78,8 @@ namespace WinAllApp
                 if (DeveMostrarOnboarding(args, tutorial)) WindowFactory.MostrarOnboarding(janela, tutorial);
             };
             viewModel.TutorialSolicitado += (s, e) => WindowFactory.MostrarOnboarding(janela, tutorial);
+            viewModel.PadronizacaoSolicitada += (s, e) =>
+                WindowFactory.MostrarPadronizacao(janela, CriarPadronizacao(ambiente, simulacao));
             return app.Run(janela);
         }
 
@@ -110,6 +113,28 @@ namespace WinAllApp
                 caminhoChoco: Path.Combine(mocks, "choco.bat"),
                 dotNet48: !TemOpcao(args, "--sem-dotnet48"),
                 tls12: !TemOpcao(args, "--sem-tls12"));
+        }
+
+        /// <summary>
+        /// Tela do checklist do Windows. Na simulação nada é executado no sistema (PowerShell e rede fictícios)
+        /// e os papéis de parede vêm de uma pasta temporária com imagens de exemplo.
+        /// </summary>
+        public static PadronizacaoViewModel CriarPadronizacao(AmbienteSistema ambiente, bool simulacao)
+        {
+            var executavel = System.Reflection.Assembly.GetEntryAssembly()?.Location;
+            if (!simulacao)
+                return new PadronizacaoViewModel(new MotorPadronizacao(new ExecutorPowerShell(), new DiagnosticoRede()), ambiente, executavel);
+
+            var raiz = Path.Combine(Path.GetTempPath(), "WinAllApp-simulacao", "padronizacao");
+            var ano = Path.Combine(raiz, "rede", DateTime.Now.Year.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            Directory.CreateDirectory(ano);
+            File.WriteAllBytes(Path.Combine(ano, "PapelParede – Adm.jpg"), new byte[] { 0xFF, 0xD8, 0xFF, 0xD9 });
+            File.WriteAllBytes(Path.Combine(ano, "PapelParede - Lab.jpg"), new byte[] { 0xFF, 0xD8, 0xFF, 0xD9 });
+            return new PadronizacaoViewModel(new MotorPadronizacao(new ExecutorPowerShellSimulado(), new DiagnosticoRedeSimulado()), ambiente, executavel)
+            {
+                PastaPapeisDeParede = Path.Combine(raiz, "rede"),
+                PastaLocalPapeis = Path.Combine(raiz, "local")
+            };
         }
 
         public static string ValorDaOpcao(string[] args, string opcao)

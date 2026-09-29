@@ -1,0 +1,229 @@
+<!--
+  Tela "Padronizar Windows": tópicos 3 a 8, 9.6 (impressora genérica por IP) e 9.7 do checklist institucional.
+  XAML "solto" ligado ao PadronizacaoViewModel. A senha vem do PasswordBox "CaixaSenha", ligado pelo WindowFactory.
+-->
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="WinAllApp · Padronizar Windows 10/11"
+        Width="1060" Height="720" MinWidth="880" MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI" FontSize="13"
+        Background="#FFFFFFFF"
+        TextOptions.TextFormattingMode="Display">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="BoolParaVisivel" />
+    <SolidColorBrush x:Key="CorPrimaria" Color="#FF2F8A3F" />
+    <SolidColorBrush x:Key="CorLateral" Color="#FFF1F4F8" />
+    <SolidColorBrush x:Key="CorBorda" Color="#FFD5DBE3" />
+    <SolidColorBrush x:Key="CorTextoSecundario" Color="#FF5B6573" />
+    <SolidColorBrush x:Key="CorErro" Color="#FFB3261E" />
+    <SolidColorBrush x:Key="CorAviso" Color="#FF8A5A00" />
+
+    <Style x:Key="Secao" TargetType="TextBlock">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="Foreground" Value="{StaticResource CorPrimaria}" />
+      <Setter Property="Margin" Value="0,14,0,6" />
+    </Style>
+    <Style x:Key="Rotulo" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource CorTextoSecundario}" />
+      <Setter Property="Margin" Value="0,0,0,3" />
+    </Style>
+    <Style x:Key="Nota" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource CorTextoSecundario}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Margin" Value="0,4,0,0" />
+    </Style>
+    <Style TargetType="TextBox">
+      <Setter Property="MinHeight" Value="26" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="Botao" TargetType="Button">
+      <Setter Property="Padding" Value="14,6" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Margin" Value="0,0,8,0" />
+    </Style>
+
+    <!-- Ícone de cada etapa conforme o StatusEtapa -->
+    <Style x:Key="IconeEtapa" TargetType="TextBlock">
+      <Setter Property="Width" Value="22" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="TextAlignment" Value="Center" />
+      <Setter Property="Text" Value="○" />
+      <Setter Property="Foreground" Value="{StaticResource CorTextoSecundario}" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding Status}" Value="Executando">
+          <Setter Property="Text" Value="…" />
+          <Setter Property="Foreground" Value="{StaticResource CorPrimaria}" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Status}" Value="Concluida">
+          <Setter Property="Text" Value="✔" />
+          <Setter Property="Foreground" Value="{StaticResource CorPrimaria}" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Status}" Value="ConcluidaComAviso">
+          <Setter Property="Text" Value="!" />
+          <Setter Property="Foreground" Value="{StaticResource CorAviso}" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Status}" Value="Falhou">
+          <Setter Property="Text" Value="✖" />
+          <Setter Property="Foreground" Value="{StaticResource CorErro}" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Status}" Value="Ignorada">
+          <Setter Property="Text" Value="–" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+    <Style x:Key="ResumoEtapa" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{StaticResource CorTextoSecundario}" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding Status}" Value="Falhou">
+          <Setter Property="Foreground" Value="{StaticResource CorErro}" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Status}" Value="ConcluidaComAviso">
+          <Setter Property="Foreground" Value="{StaticResource CorAviso}" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+  </Window.Resources>
+
+  <DockPanel>
+    <!-- ===== Rodapé ===== -->
+    <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource CorBorda}" BorderThickness="0,1,0,0" Padding="16,10">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+          <Button x:Name="BotaoCancelarPadronizacao" Content="Cancelar" Style="{StaticResource Botao}"
+                  Command="{Binding CancelarCommand}"
+                  Visibility="{Binding Executando, Converter={StaticResource BoolParaVisivel}}" />
+          <Button x:Name="BotaoPadronizar" Content="Padronizar agora" Style="{StaticResource Botao}" Margin="0"
+                  FontWeight="SemiBold" MinWidth="170" Command="{Binding ExecutarCommand}" />
+        </StackPanel>
+        <TextBlock x:Name="TextoResumoFinal" Text="{Binding ResumoFinal}" TextWrapping="Wrap" VerticalAlignment="Center"
+                   FontWeight="SemiBold" Foreground="{StaticResource CorPrimaria}" Margin="0,0,16,0" />
+      </DockPanel>
+    </Border>
+
+    <!-- ===== Formulário ===== -->
+    <Border DockPanel.Dock="Left" Width="400" Background="{StaticResource CorLateral}"
+            BorderBrush="{StaticResource CorBorda}" BorderThickness="0,0,1,0">
+      <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="16,6,16,16" IsEnabled="{Binding PodeEditar}">
+          <DockPanel Margin="0,8,0,0">
+            <Image x:Name="ImagemLogo" DockPanel.Dock="Left" Width="44" Height="44" Margin="0,0,10,0" VerticalAlignment="Center" />
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="Padronizar este computador" FontSize="17" FontWeight="SemiBold" Foreground="{StaticResource CorPrimaria}" />
+              <TextBlock x:Name="TextoWindows" Text="{Binding TextoWindows, Mode=OneWay}" Foreground="{StaticResource CorTextoSecundario}" TextWrapping="Wrap" />
+            </StackPanel>
+          </DockPanel>
+
+          <TextBlock Text="Nome do computador (tópico 7)" Style="{StaticResource Secao}" />
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="90" />
+              <ColumnDefinition Width="8" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="8" />
+              <ColumnDefinition Width="60" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+              <TextBlock Text="Bloco" Style="{StaticResource Rotulo}" />
+              <ComboBox x:Name="ComboBloco" ItemsSource="{Binding Blocos}" SelectedItem="{Binding Bloco}" MinHeight="26" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="Local (até 8 letras)" Style="{StaticResource Rotulo}" />
+              <TextBox x:Name="CaixaLocal" Text="{Binding Local, UpdateSourceTrigger=PropertyChanged}" MaxLength="8" CharacterCasing="Upper" />
+            </StackPanel>
+            <StackPanel Grid.Column="4">
+              <TextBlock Text="Nº" Style="{StaticResource Rotulo}" />
+              <TextBox x:Name="CaixaNumero" Text="{Binding Numero, UpdateSourceTrigger=PropertyChanged}" MaxLength="2" />
+            </StackPanel>
+          </Grid>
+          <TextBlock Style="{StaticResource Nota}">
+            <Run Text="Novo nome: " /><Run x:Name="TextoNomePrevisto" Text="{Binding NomeComputador, Mode=OneWay}" FontWeight="SemiBold" Foreground="#FF1F2933" />
+          </TextBlock>
+
+          <TextBlock Text="Contas (tópico 4)" Style="{StaticResource Secao}" />
+          <TextBlock Text="Senha da conta Informatica (Administrador)" Style="{StaticResource Rotulo}" />
+          <PasswordBox x:Name="CaixaSenha" MinHeight="26" VerticalContentAlignment="Center" />
+          <TextBlock Text="Conta de quem usa o computador (sem senha)" Style="{StaticResource Rotulo}" Margin="0,10,0,3" />
+          <RadioButton x:Name="OpcaoAluno" GroupName="Perfil" IsChecked="{Binding PerfilAluno}" Margin="0,2"
+                       Content="Aluno · Usuário Padrão · papel de parede Lab" />
+          <RadioButton x:Name="OpcaoBolsista" GroupName="Perfil" IsChecked="{Binding PerfilBolsista}" Margin="0,2"
+                       Content="Bolsista · Administrador · papel de parede Adm" />
+
+          <TextBlock Text="Ativação do Windows (tópico 3)" Style="{StaticResource Secao}" />
+          <TextBlock Text="Chave da etiqueta do gabinete (opcional)" Style="{StaticResource Rotulo}" />
+          <TextBox x:Name="CaixaChave" Text="{Binding ChaveProduto, UpdateSourceTrigger=PropertyChanged}" CharacterCasing="Upper" MaxLength="29" />
+          <TextBlock Style="{StaticResource Nota}"
+                     Text="Sem chave, o app só confere se o Windows já está ativado. Ativadores não oficiais não são usados e o antivírus nunca é desligado." />
+
+          <TextBlock Text="Impressora (tópico 9.6)" Style="{StaticResource Secao}" />
+          <CheckBox x:Name="CaixaImpressora" IsChecked="{Binding AdicionarImpressora}" Content="Adicionar Impressora via IP" />
+          <Grid Margin="20,6,0,0" IsEnabled="{Binding AdicionarImpressora}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="130" />
+              <ColumnDefinition Width="8" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+              <TextBlock Text="IP" Style="{StaticResource Rotulo}" />
+              <TextBox x:Name="CaixaIpImpressora" Text="{Binding IpImpressora, UpdateSourceTrigger=PropertyChanged}" MaxLength="15" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="Nome (opcional)" Style="{StaticResource Rotulo}" />
+              <TextBox x:Name="CaixaNomeImpressora" Text="{Binding NomeImpressora, UpdateSourceTrigger=PropertyChanged}" MaxLength="60" />
+            </StackPanel>
+          </Grid>
+          <TextBlock Style="{StaticResource Nota}" Margin="20,4,0,0"
+                     Text="Cria a porta TCP/IP e usa um driver genérico que já vem no Windows." />
+
+          <TextBlock Text="Papel de parede e limpeza (tópicos 6.1 e 9.7)" Style="{StaticResource Secao}" />
+          <TextBlock Text="Pasta de rede dos papéis de parede (usa o ano mais recente)" Style="{StaticResource Rotulo}" />
+          <TextBox x:Name="CaixaPastaPapeis" Text="{Binding PastaPapeisDeParede, UpdateSourceTrigger=PropertyChanged}" />
+          <CheckBox x:Name="CaixaLimpeza" IsChecked="{Binding LimparAreaDeTrabalho}" Margin="0,10,0,0"
+                    Content="Limpar atalhos e instaladores da área de trabalho" />
+
+          <TextBlock x:Name="TextoErros" Text="{Binding TextoErros}" Foreground="{StaticResource CorErro}" TextWrapping="Wrap" Margin="0,14,0,0"
+                     Visibility="{Binding TemErros, Converter={StaticResource BoolParaVisivel}}" />
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <!-- ===== Etapas e registro ===== -->
+    <Grid Margin="20,16,20,12">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <StackPanel Grid.Row="0" Margin="0,0,0,10">
+        <TextBlock Text="Etapas" FontSize="17" FontWeight="SemiBold" />
+        <TextBlock Style="{StaticResource Nota}"
+                   Text="Ativação, contas, UAC em Nunca notificar, papel de parede, GPOs de tema e plano de fundo, Windows Update desabilitado, novo nome, impressora (se marcada) e limpeza. Cada etapa mostra ✔, ! ou ✖ ao terminar." />
+      </StackPanel>
+      <Border Grid.Row="1" BorderBrush="{StaticResource CorBorda}" BorderThickness="1">
+        <ListBox x:Name="ListaEtapas" ItemsSource="{Binding Etapas}" BorderThickness="0"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <DockPanel Margin="4,5">
+                <TextBlock DockPanel.Dock="Left" Style="{StaticResource IconeEtapa}" VerticalAlignment="Top" Margin="0,0,8,0" />
+                <StackPanel>
+                  <TextBlock Text="{Binding Rotulo}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Resumo}" Style="{StaticResource ResumoEtapa}" />
+                </StackPanel>
+              </DockPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Border>
+      <Expander Grid.Row="2" Header="Registro da padronização" Margin="0,10,0,0">
+        <TextBox x:Name="CaixaRegistro" Text="{Binding Registro, Mode=OneWay}" IsReadOnly="True" Height="140" TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" VerticalContentAlignment="Top" />
+      </Expander>
+    </Grid>
+  </DockPanel>
+</Window>

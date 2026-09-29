@@ -264,8 +264,11 @@
           <TextBlock x:Name="TextoAmbiente" Text="{Binding ResumoAmbiente, Mode=OneWay}" TextWrapping="Wrap" FontSize="12"
                      Foreground="{StaticResource CorTextoSecundario}" Margin="0,0,0,10" />
           <StackPanel Orientation="Horizontal">
-            <Button x:Name="BotaoTutorial" Content="Tutorial" Style="{StaticResource Botao}" Margin="0"
+            <Button x:Name="BotaoTutorial" Content="Tutorial" Style="{StaticResource Botao}"
                     Command="{Binding AbrirTutorialCommand}" />
+            <Button x:Name="BotaoPadronizar" Content="Padronizar Windows" Style="{StaticResource Botao}" Margin="0"
+                    Command="{Binding AbrirPadronizacaoCommand}"
+                    ToolTip="Checklist do Windows 10/11: ativação, contas, UAC, papel de parede, GPOs, nome, impressora por IP e limpeza" />
           </StackPanel>
         </StackPanel>
 

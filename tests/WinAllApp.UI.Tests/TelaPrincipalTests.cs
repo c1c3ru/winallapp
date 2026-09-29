@@ -429,6 +429,76 @@ namespace WinAllApp.UI.Tests
             }
         }
 
+        /// <summary>
+        /// Tela "Padronizar Windows" em modo simulação (nada é executado no sistema): o técnico preenche nome, senha,
+        /// perfil e impressora por IP, confirma e vê cada etapa do checklist terminar com ✔.
+        /// </summary>
+        [Fact]
+        public void Padronizacao_PreencheOChecklistEExecutaEmSimulacao()
+        {
+            RodarEmSta(() =>
+            {
+                SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+
+                var vm = Program.CriarPadronizacao(AmbienteSistema.Simular("11"), simulacao: true);
+                string pergunta = null;
+                vm.Confirmar = texto => { pergunta = texto; return true; };
+                var janela = WindowFactory.CriarPadronizacao(vm);
+                janela.ShowActivated = false;
+                janela.ShowInTaskbar = false;
+                janela.Show();
+                try
+                {
+                    Processar();
+                    var executar = (Button)janela.FindName("BotaoPadronizar");
+                    Assert.False(executar.IsEnabled);
+                    Assert.True(((FrameworkElement)janela.FindName("TextoErros")).IsVisible);
+                    Assert.Contains("Windows 11", ((TextBlock)janela.FindName("TextoWindows")).Text);
+
+                    ((ComboBox)janela.FindName("ComboBloco")).SelectedItem = "BL2";
+                    ((TextBox)janela.FindName("CaixaLocal")).Text = "lia";
+                    ((TextBox)janela.FindName("CaixaNumero")).Text = "7";
+                    ((PasswordBox)janela.FindName("CaixaSenha")).Password = "Senha!2025";
+                    ((RadioButton)janela.FindName("OpcaoBolsista")).IsChecked = true;
+                    Processar();
+                    Assert.Equal("BL2-LIA-07", vm.NomeComputador);
+                    Assert.Equal("Senha!2025", vm.SenhaInformatica);
+                    Assert.True(vm.PerfilBolsista);
+                    Assert.True(executar.IsEnabled);
+
+                    // Impressora marcada sem IP bloqueia; com IP válido libera.
+                    var ip = (TextBox)janela.FindName("CaixaIpImpressora");
+                    Assert.False(ip.IsEnabled);
+                    ((CheckBox)janela.FindName("CaixaImpressora")).IsChecked = true;
+                    Processar();
+                    Assert.True(ip.IsEnabled);
+                    Assert.False(executar.IsEnabled);
+                    ip.Text = "10.50.12.34";
+                    Processar();
+                    Assert.True(executar.IsEnabled);
+                    Assert.False(((FrameworkElement)janela.FindName("TextoErros")).IsVisible);
+                    Capturar(janela, "15-padronizacao-formulario.png");
+
+                    executar.Command.Execute(null);
+                    Processar(() => vm.Etapas.Count > 0 && !vm.Executando, TimeSpan.FromSeconds(40));
+                    Processar(() => vm.Etapas.All(e => e.Status == Core.Services.Padronizacao.StatusEtapa.Concluida), TimeSpan.FromSeconds(5));
+
+                    Assert.Contains("4 Criar as contas Informatica e Bolsista", pergunta);
+                    Assert.Contains("9.6 Adicionar a impressora 10.50.12.34", pergunta);
+                    Assert.Equal(11, vm.Etapas.Count);
+                    Assert.All(vm.Etapas, e => Assert.Equal(Core.Services.Padronizacao.StatusEtapa.Concluida, e.Status));
+                    Assert.Equal("11 de 11 etapa(s) concluída(s). Reinicie o computador para aplicar o novo nome e as políticas.",
+                        ((TextBlock)janela.FindName("TextoResumoFinal")).Text);
+                    Assert.Equal(11, ((ListBox)janela.FindName("ListaEtapas")).Items.Count);
+                    Capturar(janela, "16-padronizacao-concluida.png");
+                }
+                finally
+                {
+                    janela.Close();
+                }
+            });
+        }
+
         private static void RodarEmSta(Action acao)
         {
             Exception erro = null;

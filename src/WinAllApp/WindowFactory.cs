@@ -5,6 +5,7 @@ using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using WinAllApp.Core.Services;
+using WinAllApp.Core.Services.Padronizacao;
 using WinAllApp.Core.ViewModels;
 
 namespace WinAllApp
@@ -14,6 +15,7 @@ namespace WinAllApp
     {
         public const string RecursoJanelaPrincipal = "WinAllApp.Views.MainWindow.xaml";
         public const string RecursoOnboarding = "WinAllApp.Views.OnboardingWindow.xaml";
+        public const string RecursoPadronizacao = "WinAllApp.Views.PadronizacaoWindow.xaml";
         public const string RecursoLogo = "WinAllApp.Imagens.logo-ifce.png";
 
         public static Window CriarJanelaPrincipal(object viewModel)
@@ -39,6 +41,32 @@ namespace WinAllApp
         {
             var pastaRede = (dona.DataContext as MainViewModel)?.PastaRede;
             var janela = CriarOnboarding(new OnboardingViewModel(pastaRede, preferencias));
+            if (dona.IsVisible) janela.Owner = dona;
+            else janela.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            janela.ShowDialog();
+        }
+
+        /// <summary>
+        /// Cria a janela de padronização (sem exibir). O PasswordBox não aceita binding, então a senha
+        /// é repassada ao ViewModel pelo evento PasswordChanged; a confirmação usa uma MessageBox.
+        /// </summary>
+        public static Window CriarPadronizacao(PadronizacaoViewModel viewModel)
+        {
+            var janela = (Window)CarregarXaml(RecursoPadronizacao);
+            AplicarIdentidadeVisual(janela);
+            janela.DataContext = viewModel;
+            if (janela.FindName("CaixaSenha") is PasswordBox senha)
+                senha.PasswordChanged += (s, e) => viewModel.SenhaInformatica = senha.Password;
+            if (viewModel.Confirmar == null)
+                viewModel.Confirmar = texto => MessageBox.Show(janela, texto, "Padronizar Windows",
+                    MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
+            return janela;
+        }
+
+        /// <summary>Mostra a padronização como janela modal sobre a principal.</summary>
+        public static void MostrarPadronizacao(Window dona, PadronizacaoViewModel viewModel)
+        {
+            var janela = CriarPadronizacao(viewModel);
             if (dona.IsVisible) janela.Owner = dona;
             else janela.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             janela.ShowDialog();

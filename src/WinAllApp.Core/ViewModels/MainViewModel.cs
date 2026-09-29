@@ -64,6 +64,7 @@ namespace WinAllApp.Core.ViewModels
             CancelarCommand = new RelayCommand(Cancelar, () => Ocupado && _cancelamento != null && !_cancelamento.IsCancellationRequested);
             VerificarPastaRedeCommand = new AsyncRelayCommand(VerificarPastaRedeAsync, () => !_verificandoPastaRede && !Ocupado);
             AbrirTutorialCommand = new RelayCommand(() => TutorialSolicitado?.Invoke(this, EventArgs.Empty));
+            AbrirPadronizacaoCommand = new RelayCommand(() => PadronizacaoSolicitada?.Invoke(this, EventArgs.Empty), () => !Ocupado);
             LimparPesquisaCommand = new RelayCommand(() => SearchText = string.Empty, () => TemPesquisa);
             FecharErroCommand = new RelayCommand(LimparErro, () => TemErro);
             PastaRedeStatus = "Pasta de rede: ainda não verificada.";
@@ -91,11 +92,15 @@ namespace WinAllApp.Core.ViewModels
         public RelayCommand CancelarCommand { get; }
         public AsyncRelayCommand VerificarPastaRedeCommand { get; }
         public RelayCommand AbrirTutorialCommand { get; }
+        public RelayCommand AbrirPadronizacaoCommand { get; }
         public RelayCommand LimparPesquisaCommand { get; }
         public RelayCommand FecharErroCommand { get; }
 
         /// <summary>Disparado pelo botão "Tutorial"; a janela abre o onboarding.</summary>
         public event EventHandler TutorialSolicitado;
+
+        /// <summary>Disparado pelo botão "Padronizar Windows"; a janela abre a tela do checklist (tópicos 3 a 9.7).</summary>
+        public event EventHandler PadronizacaoSolicitada;
 
         /// <summary>Máquina detectada (ou simulada) usada no roteamento winget/Chocolatey.</summary>
         public AmbienteSistema Ambiente => _fila.Roteador.Contexto.Ambiente;
@@ -731,6 +736,7 @@ namespace WinAllApp.Core.ViewModels
             InstalarCommand.NotificarMudanca();
             CancelarCommand.NotificarMudanca();
             VerificarPastaRedeCommand.NotificarMudanca();
+            AbrirPadronizacaoCommand.NotificarMudanca();
         }
 
         private void AdicionarLog(string linha) => Log.Add($"{DateTime.Now:HH:mm:ss}  {linha}");

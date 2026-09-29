@@ -59,6 +59,28 @@ Ela é atualizada automaticamente a cada alteração que passa em todos os teste
 Marque **Não mostrar novamente** no tutorial para ele não abrir nas próximas vezes. A preferência fica em
 `%APPDATA%\WinAllApp\preferencias.ini` (nada é gravado ao lado do .exe).
 
+### Padronizar o Windows 10/11 (checklist da TI)
+
+O botão **Padronizar Windows**, no menu lateral, abre a tela do checklist institucional (tópicos 3 a 8, 9.6 e 9.7 do
+manual). Preencha e clique em **Padronizar agora**; o app mostra a lista do que vai mudar e pede confirmação.
+
+| Campo | O que acontece |
+|---|---|
+| Bloco, Local e Nº | Renomeia para `BLOCO-LOCAL-XX` (ADM, BL1, BL2 ou BL3; local até 8 letras). Vale depois de reiniciar |
+| Senha da Informatica | Cria ou ajusta a conta **Informatica** (Administrador, com senha) |
+| Aluno ou Bolsista | Cria **Aluno** (Usuário Padrão, sem senha, papel de parede Lab) ou **Bolsista** (Administrador, sem senha, papel Adm) |
+| Chave da etiqueta | Opcional. Ativa o Windows pelo licenciamento oficial; sem chave, só confere se já está ativado |
+| Adicionar Impressora via IP | Opcional. Cria a porta TCP/IP e usa um driver genérico do Windows (qualquer marca) |
+| Pasta dos papéis de parede | Copia "PapelParede – Adm" e "PapelParede - Lab" do ano mais recente para o disco local |
+| Limpar área de trabalho | Apaga atalhos e instaladores das áreas de trabalho (nunca o WinAllApp.exe) |
+
+Também sempre roda: teste de rede e internet, UAC em "Nunca notificar", GPOs que impedem trocar tema e plano de fundo
+(em todas as contas e nas criadas depois) e Windows Update automático desabilitado. O app detecta sozinho se é
+Windows 10 ou 11 e ajusta os comandos. Ativadores não oficiais não são usados e o antivírus nunca é desligado.
+Programas (Chrome, WPS…), manutenção de disco e etiquetas continuam manuais. Detalhes em `STATUS_AUTOMACAO_CHECKLIST.md`.
+
+Com `--simulacao` a tela funciona igual, mas nada é executado no computador.
+
 ### Opções de linha de comando
 
 | Comando | O que faz |
