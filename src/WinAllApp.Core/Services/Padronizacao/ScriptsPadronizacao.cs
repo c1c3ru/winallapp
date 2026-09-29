@@ -162,8 +162,13 @@ namespace WinAllApp.Core.Services.Padronizacao
                     return [bool]$g.Invoke('IsMember', ('WinNT://' + $maquina + '/' + $conta))
                 }
 
+                # [ADSI]::Exists lança "The user name could not be found" em vez de devolver falso no provedor WinNT.
+                function ContaExiste([string]$conta) {
+                    try { return [ADSI]::Exists('WinNT://' + $maquina + '/' + $conta + ',user') } catch { return $false }
+                }
+
                 function GarantirConta([string]$conta, [bool]$admin, [string]$senha) {
-                    $existia = [ADSI]::Exists('WinNT://' + $maquina + '/' + $conta + ',user')
+                    $existia = ContaExiste $conta
                     if (-not $existia) {
                         # /passwordreq:no: a conta nasce sem senha mesmo se a política exigir senha; a da Informatica é gravada logo abaixo.
                         Invocar 'net.exe' @('user', $conta, '/add', '/active:yes', '/passwordreq:no') | Out-Null

@@ -108,7 +108,10 @@ namespace WinAllApp.Core.Tests
                 {
                     var agora = Interlocked.Increment(ref simultaneos);
                     InterlockedMax(ref maximo, agora);
-                    Thread.Sleep(300);
+                    // Espera uma segunda consulta começar (até 3 s, abaixo do timeout de 5 s): com o pool de threads
+                    // ocupado por outros testes, um Sleep fixo podia terminar antes de a segunda thread entrar.
+                    SpinWait.SpinUntil(() => Volatile.Read(ref maximo) > 1, TimeSpan.FromSeconds(3));
+                    Thread.Sleep(50);
                     Interlocked.Decrement(ref simultaneos);
                     return !f.EndsWith("p3.exe");
                 },

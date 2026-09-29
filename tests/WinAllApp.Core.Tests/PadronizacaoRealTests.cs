@@ -145,7 +145,7 @@ namespace WinAllApp.Core.Tests
                     $g = [ADSI]('WinNT://' + $env:COMPUTERNAME + '/' + $adm + ',group')
                     Write-Output ('INFORMATICA_ADMIN=' + $g.Invoke('IsMember', ('WinNT://' + $env:COMPUTERNAME + '/Informatica')))
                     Write-Output ('ALUNO_ADMIN=' + $g.Invoke('IsMember', ('WinNT://' + $env:COMPUTERNAME + '/Aluno')))
-                    Write-Output ('ALUNO_EXISTE=' + [ADSI]::Exists('WinNT://' + $env:COMPUTERNAME + '/Aluno,user'))
+                    Write-Output ('ALUNO_EXISTE=' + [bool](Get-CimInstance -ClassName Win32_UserAccount -Filter "LocalAccount=True AND Name='Aluno'"))
                     $maquina = New-Object System.DirectoryServices.AccountManagement.PrincipalContext('Machine')
                     Write-Output ('SENHA_OK=' + $maquina.ValidateCredentials('Informatica', $env:WINALLAPP_SENHA_TESTE))
                     """.Replace("$env:WINALLAPP_SENHA_TESTE", "'" + senha + "'"));
@@ -198,7 +198,7 @@ namespace WinAllApp.Core.Tests
             {
                 await RodarAsync(ScriptsPadronizacao.Montar("""
                     foreach ($conta in @('Aluno', 'Informatica')) {
-                        if (-not [ADSI]::Exists('WinNT://' + $env:COMPUTERNAME + '/' + $conta + ',user')) { continue }
+                        if (-not (Get-CimInstance -ClassName Win32_UserAccount -Filter ("LocalAccount=True AND Name='" + $conta + "'"))) { continue }
                         $sid = (New-Object Security.Principal.NTAccount($env:COMPUTERNAME, $conta)).Translate([Security.Principal.SecurityIdentifier]).Value
                         Get-CimInstance -ClassName Win32_UserProfile | Where-Object { $_.SID -eq $sid } | Remove-CimInstance
                         Invocar 'net.exe' @('user', $conta, '/delete') | Out-Null
