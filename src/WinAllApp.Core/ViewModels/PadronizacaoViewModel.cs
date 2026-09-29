@@ -26,6 +26,9 @@ namespace WinAllApp.Core.ViewModels
         public string Titulo => Etapa.Titulo;
         public string Rotulo => $"{Etapa.Topico} · {Etapa.Titulo}";
 
+        /// <summary>Já recebeu o resultado final (concluída, aviso, falha ou ignorada).</summary>
+        internal bool Finalizada { get; set; }
+
         public StatusEtapa Status
         {
             get => _status;
@@ -189,7 +192,10 @@ namespace WinAllApp.Core.ViewModels
             private set => Set(ref _resumoFinal, value);
         }
 
-        public string Registro => _registro.ToString();
+        public string Registro
+        {
+            get { lock (_registro) return _registro.ToString(); }
+        }
 
         public event EventHandler Concluida;
 
@@ -211,7 +217,7 @@ namespace WinAllApp.Core.ViewModels
 
         private void Registrar(string texto)
         {
-            _registro.AppendLine($"[{DateTime.Now:HH:mm:ss}] {texto}");
+            lock (_registro) _registro.AppendLine($"[{DateTime.Now:HH:mm:ss}] {texto}");
             OnPropertyChanged(nameof(Registro));
         }
 
@@ -247,11 +253,17 @@ namespace WinAllApp.Core.ViewModels
             var progresso = new Progress<KeyValuePair<EtapaPadronizacao, ResultadoEtapa>>(par =>
             {
                 var item = itens[par.Key];
-                // "Executando" nunca sobrescreve um resultado que já chegou (avisos fora de ordem).
-                if (par.Value.Status == StatusEtapa.Executando && item.Status != StatusEtapa.Pendente) return;
-                item.Status = par.Value.Status;
-                item.Resumo = par.Value.Resumo;
-                if (par.Value.Status != StatusEtapa.Executando && par.Value.Status != StatusEtapa.Pendente)
+                var final = par.Value.Status != StatusEtapa.Executando && par.Value.Status != StatusEtapa.Pendente;
+                // Sem contexto de tela os avisos chegam por threads diferentes e fora de ordem:
+                // "Executando" nunca sobrescreve um resultado que já chegou.
+                lock (item)
+                {
+                    if (!final && item.Finalizada) return;
+                    if (final) item.Finalizada = true;
+                    item.Status = par.Value.Status;
+                    item.Resumo = par.Value.Resumo;
+                }
+                if (final)
                     Registrar($"{par.Key.Topico} {par.Key.Titulo}: {Rotulo(par.Value.Status)}. {par.Value.Resumo}");
             });
 
