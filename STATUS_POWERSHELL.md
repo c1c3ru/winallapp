@@ -1,5 +1,7 @@
 # STATUS_POWERSHELL
 
+**Situação: concluído.** CI Windows verde.
+
 > Troca dos arquivos em lotes (`.bat`) por scripts do Windows PowerShell (`.ps1`), compatíveis com
 > Windows 7, 10 e 11. Branch: `claude/powershell-scripts`. Atualizado a cada ciclo.
 
@@ -42,7 +44,8 @@ powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 
 
 | Ciclo | O que foi feito | Resultado |
 |---|---|---|
-| 1 | Tipo `ps1` no `InstallCommandBuilder`, mocks convertidos, modelo `copiar-portatil.ps1`, teste de compatibilidade com o 2.0, testes reais no Windows. Mocks executados com PowerShell 7 no Linux para conferir argumentos e log. | 206 testes ok no Linux; CI Windows: aguardando |
+| 1 | Tipo `ps1` no `InstallCommandBuilder`, mocks convertidos, modelo `copiar-portatil.ps1`, teste de compatibilidade com o 2.0, testes reais no Windows. Mocks executados com PowerShell 7 no Linux para conferir argumentos e log. | 206 testes ok no Linux. CI Windows: todos os `.ps1` passaram; só o teste novo do `.bat` antigo falhou |
+| 2 | Causa: o `cmd.exe` lê o `.bat` na página de código OEM, e o caminho com "ç" escrito dentro dele se perdia. O teste passou a usar `%~dp0`. | **CI Windows verde** (commit `f443cbd`) |
 
 ## Pendências
 
