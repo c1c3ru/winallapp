@@ -172,7 +172,9 @@ namespace WinAllApp.Core.Tests
             var log = Path.Combine(pasta, "log.txt");
             File.WriteAllText(Path.Combine(pasta, "antigo.bat"),
                 "@echo off\r\n" +
-                $">> \"{log}\" echo antigo %*\r\n" + // redirecionamento antes do echo: "X=1>>" seria lido como handle 1
+                // %~dp0: o cmd lê o .bat na página de código OEM, então o caminho com "ç" não pode ir escrito no arquivo.
+                // Redirecionamento antes do echo: "X=1>>" seria lido como handle 1.
+                ">> \"%~dp0log.txt\" echo antigo %*\r\n" +
                 "exit /b 3010\r\n");
             var comando = InstallCommandBuilder.Construir(
                 new Programa { Id = "antigo", Instalador = "antigo.bat", Argumentos = "/quiet InstallAllUsers=1" }, pasta);
