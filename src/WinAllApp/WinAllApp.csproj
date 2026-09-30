@@ -33,7 +33,7 @@
     <EmbeddedResource Include="Views\*.xaml" LogicalName="WinAllApp.Views.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Imagens\logo-ifce.png" LogicalName="WinAllApp.Imagens.%(Filename)%(Extension)" />
     <EmbeddedResource Include="config.json;config.simulacao.json" LogicalName="WinAllApp.Config.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\..\mock-installers\**\*.bat;..\..\mock-installers\**\*.txt" LogicalName="WinAllApp.Simulacao.%(RecursiveDir)%(Filename)%(Extension)" Link="mock-installers\%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\mock-installers\**\*.ps1;..\..\mock-installers\**\*.txt" LogicalName="WinAllApp.Simulacao.%(RecursiveDir)%(Filename)%(Extension)" Link="mock-installers\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <PropertyGroup>

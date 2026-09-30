@@ -14,7 +14,7 @@ namespace WinAllApp.Core.Tests
 {
     /// <summary>
     /// Usa o ProcessRunner real (Process.Start) com instaladores fictícios rápidos:
-    /// .bat no Windows, .sh no Linux/macOS. Nenhum software real é baixado ou instalado.
+    /// .ps1 no Windows (Windows PowerShell), .sh no Linux/macOS. Nenhum software real é baixado ou instalado.
     /// </summary>
     public class ProcessoRealTests
     {
@@ -113,17 +113,17 @@ namespace WinAllApp.Core.Tests
         }
 
         /// <summary>
-        /// Simulação completa no Windows com o config.simulacao.json e os .bat da pasta mock-installers
+        /// Simulação completa no Windows com o config.simulacao.json e os .ps1 da pasta mock-installers
         /// (os mesmos que acompanham o executável).
         /// </summary>
         [WindowsFact]
-        public async Task Simulacao_ConfigDoAplicativoComBatsFicticios()
+        public async Task Simulacao_ConfigDoAplicativoComScriptsPowerShellFicticios()
         {
             var pastaApp = Dados.NovaPastaTemporaria();
             File.Copy(Path.Combine(Dados.Pasta, "app", "config.simulacao.json"), Path.Combine(pastaApp, "config.simulacao.json"));
             Directory.CreateDirectory(Path.Combine(pastaApp, "mock-installers"));
-            foreach (var bat in Directory.GetFiles(Path.Combine(Dados.Pasta, "app", "mock-installers"), "*.bat"))
-                File.Copy(bat, Path.Combine(pastaApp, "mock-installers", Path.GetFileName(bat)));
+            foreach (var script in Directory.GetFiles(Path.Combine(Dados.Pasta, "app", "mock-installers"), "*.ps1"))
+                File.Copy(script, Path.Combine(pastaApp, "mock-installers", Path.GetFileName(script)));
 
             var carga = ConfigLoader.CarregarArquivo(Path.Combine(pastaApp, "config.simulacao.json"));
             Assert.True(carga.Valido, string.Join("; ", carga.Erros));
@@ -158,9 +158,74 @@ namespace WinAllApp.Core.Tests
 
             Assert.All(resultados, r => Assert.Equal(EstadoInstalacao.Sucesso, r.Estado));
             var log = File.ReadAllLines(Path.Combine(pastaApp, "mock-installers", "instalacoes-simuladas.log"));
-            Assert.Contains(log, l => l.Contains("vscode-setup.bat /VERYSILENT /NORESTART"));
-            Assert.Contains(log, l => l.Contains("python-setup.bat /quiet InstallAllUsers=1"));
-            Assert.Contains(log, l => l.Contains("codeblocks-setup.bat /S"));
+            Assert.Contains(log, l => l.Contains("vscode-setup.ps1 /VERYSILENT /NORESTART"));
+            Assert.Contains(log, l => l.Contains("python-setup.ps1 /quiet InstallAllUsers=1"));
+            Assert.Contains(log, l => l.Contains("codeblocks-setup.ps1 /S"));
+        }
+
+        /// <summary>Um .bat antigo na pasta de rede continua funcionando (via cmd.exe), com aspas e "X=1" intactos.</summary>
+        [WindowsFact]
+        public async Task Bat_ContinuaSuportadoPorCompatibilidade()
+        {
+            var pasta = Path.Combine(Dados.NovaPastaTemporaria(), "pasta com espaço");
+            Directory.CreateDirectory(pasta);
+            var log = Path.Combine(pasta, "log.txt");
+            File.WriteAllText(Path.Combine(pasta, "antigo.bat"),
+                "@echo off\r\n" +
+                $">> \"{log}\" echo antigo %*\r\n" + // redirecionamento antes do echo: "X=1>>" seria lido como handle 1
+                "exit /b 3010\r\n");
+            var comando = InstallCommandBuilder.Construir(
+                new Programa { Id = "antigo", Instalador = "antigo.bat", Argumentos = "/quiet InstallAllUsers=1" }, pasta);
+
+            var codigo = await new ProcessRunner().ExecutarAsync(comando, TimeSpan.FromMinutes(1), default);
+
+            Assert.Equal(3010, codigo);
+            Assert.Equal("antigo /quiet InstallAllUsers=1", File.ReadAllText(log).Trim());
+        }
+
+        /// <summary>
+        /// O modelo exemplos\copiar-portatil.ps1 roda de verdade: copia a pasta (numa rede "de mentira" com espaço
+        /// no nome), cria o atalho na Área de Trabalho pública e sai com 0; sem argumentos, sai com erro.
+        /// </summary>
+        [WindowsFact]
+        public async Task ExemploCopiarPortatil_CopiaAPastaECriaOAtalho()
+        {
+            var raiz = Dados.NovaPastaTemporaria();
+            var rede = Path.Combine(raiz, "rede", "Programa Portátil");
+            Directory.CreateDirectory(Path.Combine(rede, "dados"));
+            File.Copy(Path.Combine(Dados.Pasta, "exemplos", "copiar-portatil.ps1"), Path.Combine(rede, "copiar.ps1"));
+            File.WriteAllText(Path.Combine(rede, "programa.exe"), "x");
+            File.WriteAllText(Path.Combine(rede, "dados", "exemplo.txt"), "y");
+            var destino = Path.Combine(raiz, "local", "Programa X");
+            var nomeAtalho = "WinAllApp-teste-" + Guid.NewGuid().ToString("N");
+            var atalho = Path.Combine(Environment.GetEnvironmentVariable("PUBLIC") ?? "", "Desktop", nomeAtalho + ".lnk");
+            var runner = new ProcessRunner();
+
+            try
+            {
+                var comando = InstallCommandBuilder.Construir(new Programa
+                {
+                    Id = "portatil", Instalador = Path.Combine("Programa Portátil", "copiar.ps1"), Tipo = "ps1",
+                    Argumentos = $"\"{destino}\" programa.exe {nomeAtalho}"
+                }, Path.Combine(raiz, "rede"));
+                _saida.WriteLine(comando.ToString());
+
+                Assert.Equal(0, await runner.ExecutarAsync(comando, TimeSpan.FromMinutes(2), default));
+                Assert.True(File.Exists(Path.Combine(destino, "programa.exe")));
+                Assert.True(File.Exists(Path.Combine(destino, "dados", "exemplo.txt")));
+                Assert.False(File.Exists(Path.Combine(destino, "copiar.ps1")));
+                Assert.True(File.Exists(atalho), "Atalho não criado: " + atalho);
+
+                var semArgumentos = InstallCommandBuilder.Construir(new Programa
+                {
+                    Id = "portatil", Instalador = Path.Combine("Programa Portátil", "copiar.ps1"), Tipo = "ps1"
+                }, Path.Combine(raiz, "rede"));
+                Assert.Equal(2, await runner.ExecutarAsync(semArgumentos, TimeSpan.FromMinutes(2), default));
+            }
+            finally
+            {
+                if (File.Exists(atalho)) File.Delete(atalho);
+            }
         }
     }
 }

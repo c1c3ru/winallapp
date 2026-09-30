@@ -168,7 +168,7 @@ Acrescente um item em `programas` e coloque o `id` na lista do laboratório. Exe
 | `id`, `nome` | sim | Identificador único e nome exibido |
 | `categoria` | recomendado | `gerenciador`, `offline_licenciado`, `offline_gratuito` ou `copia_pasta`. Sem ela: `gerenciador` se houver `wingetId`/`chocoId`, senão `offline_gratuito` |
 | `instalador` | sim (exceto `gerenciador` só com pacote) | Arquivo na pasta de rede; em `copia_pasta`, a **pasta** a copiar |
-| `tipo` | não | `exe`, `msi`, `bat` ou `cmd` (deduzido pela extensão) |
+| `tipo` | não | `exe`, `msi`, `ps1` (PowerShell), `bat` ou `cmd` (deduzido pela extensão) |
 | `argumentos` | recomendado | Parâmetros silenciosos (`/S`, `/quiet`, `/VERYSILENT`…). MSI usa `/qn /norestart` por padrão |
 | `wingetId`, `wingetVersao` | não | Pacote e versão fixa no winget (Windows 10/11) |
 | `chocoId`, `chocoVersao` | não | Pacote e versão fixa no Chocolatey (Windows 7/8.1) |
@@ -188,6 +188,12 @@ Para os programas com pacote no winget, uma máquina Windows 10/11 da TI pode ba
 winget download --id GeoGebra.Classic -d \\servidor\instaladores\GeoGebra
 winget download --id GNU.Octave --version 7.3.0 -d \\servidor\instaladores\Octave7.3.0
 ```
+
+Scripts (`.ps1`): quando um programa precisa de passos extras (ex.: portátil que é copiado e ganha atalho), use um
+script PowerShell. O WinAllApp roda com `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "script.ps1" argumentos`,
+sem mudar a política do computador. Escreva só com recursos do **PowerShell 2.0** (o do Windows 7), que também
+rodam no 5.1 do Windows 10/11: nada de `$PSScriptRoot`, `-in`, `[ordered]`, `Invoke-WebRequest` etc., e salve o
+arquivo sem acentos (ASCII). Modelo pronto: `exemplos/copiar-portatil.ps1`. Arquivos `.bat` antigos continuam aceitos.
 
 Instaladores licenciados: copie para a pasta o **pacote de implantação** gerado no portal do fabricante
 (ex.: Autodesk). O WinAllApp não preenche contas nem ativa licenças.

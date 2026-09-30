@@ -16,6 +16,7 @@
     <None Include="TestData\**" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\src\WinAllApp\config.json" Link="TestData\app\config.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\src\WinAllApp\config.simulacao.json" Link="TestData\app\config.simulacao.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\mock-installers\**\*.bat;..\..\mock-installers\**\*.txt" Link="TestData\app\mock-installers\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\mock-installers\**\*.ps1;..\..\mock-installers\**\*.txt" Link="TestData\app\mock-installers\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\exemplos\*.ps1" Link="TestData\exemplos\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

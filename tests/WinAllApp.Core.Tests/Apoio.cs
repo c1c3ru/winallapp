@@ -49,13 +49,13 @@ namespace WinAllApp.Core.Tests
         }
     }
 
-    /// <summary>Teste que só roda no Windows (ex.: executa .bat de verdade).</summary>
+    /// <summary>Teste que só roda no Windows (ex.: executa .ps1 de verdade no Windows PowerShell).</summary>
     public sealed class WindowsFactAttribute : FactAttribute
     {
         public WindowsFactAttribute()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                Skip = "Requer Windows (executa instaladores .bat reais via cmd.exe).";
+                Skip = "Requer Windows (executa instaladores fictícios reais via powershell.exe ou cmd.exe).";
         }
     }
 
@@ -77,21 +77,21 @@ namespace WinAllApp.Core.Tests
 
         /// <summary>
         /// Cria um instalador fictício que registra "nome argumentos" em log.txt e sai com o código pedido.
-        /// No Windows é um .bat (tipo "bat", via cmd.exe); nos demais SOs um script .sh executável (tipo "exe").
+        /// No Windows é um .ps1 (tipo "ps1", via powershell.exe, só com recursos do PowerShell 2.0);
+        /// nos demais SOs um script .sh executável (tipo "exe").
         /// </summary>
         public static Programa CriarInstaladorFicticio(string pasta, string id, string argumentos, int codigoSaida = 0, int segundos = 0)
         {
             var log = Path.Combine(pasta, "log.txt");
             if (OperatingSystem.IsWindows())
             {
-                var arquivo = Path.Combine(pasta, id + "-setup.bat");
-                var espera = segundos > 0 ? $"ping -n {segundos + 1} 127.0.0.1 >nul\r\n" : string.Empty;
+                var arquivo = Path.Combine(pasta, id + "-setup.ps1");
+                var espera = segundos > 0 ? $"Start-Sleep -Seconds {segundos}\r\n" : string.Empty;
                 File.WriteAllText(arquivo,
-                    "@echo off\r\n" +
-                    $">> \"{log}\" echo {id} %*\r\n" + // redirecionamento antes do echo: "X=1>>" seria lido como handle 1
+                    $"Add-Content -LiteralPath '{log}' -Value ('{id} ' + ($args -join ' '))\r\n" +
                     espera +
-                    $"exit /b {codigoSaida}\r\n");
-                return new Programa { Id = id, Nome = id, Instalador = Path.GetFileName(arquivo), Tipo = "bat", Argumentos = argumentos };
+                    $"exit {codigoSaida}\r\n");
+                return new Programa { Id = id, Nome = id, Instalador = Path.GetFileName(arquivo), Tipo = "ps1", Argumentos = argumentos };
             }
             else
             {

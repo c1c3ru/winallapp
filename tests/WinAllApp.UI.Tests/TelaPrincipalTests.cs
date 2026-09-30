@@ -198,7 +198,7 @@ namespace WinAllApp.UI.Tests
                     vm.BlocoSelecionado = vm.Blocos.Single(b => b.Id == "BL1");
                     vm.LaboratorioSelecionado = vm.Laboratorios.Single(l => l.Id == "WIN7");
                     Processar(() => !vm.VerificandoArquivos, TimeSpan.FromSeconds(10));
-                    Assert.All(vm.Programas, p => Assert.True(p.Encontrado, p.StatusBusca)); // .bat da simulação existem
+                    Assert.All(vm.Programas, p => Assert.True(p.Encontrado, p.StatusBusca)); // .ps1 da simulação existem
 
                     Assert.NotNull(((Image)janela.FindName("ImagemLogo")).Source);
                     Assert.True(vm.PastaRedeAcessivel == true, vm.PastaRedeStatus);

@@ -48,6 +48,30 @@ namespace WinAllApp.Core.Tests
         }
 
         [Fact]
+        public void Ps1_RodaViaPowerShellComFileEBypass()
+        {
+            var cmd = InstallCommandBuilder.Construir(
+                new Programa { Id = "x", Instalador = "pasta com espaço/copiar.ps1", Argumentos = "\"C:\\Programas\\X\" x.exe" }, Raiz);
+
+            Assert.Equal(TipoInstalador.PowerShell, InstallCommandBuilder.ResolverTipo(new Programa { Instalador = "a.ps1" }));
+            Assert.EndsWith("powershell.exe", cmd.Arquivo);
+            Assert.Equal("-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "
+                + $"\"{Path.Combine(Raiz, "pasta com espaço", "copiar.ps1")}\" \"C:\\Programas\\X\" x.exe", cmd.Argumentos);
+        }
+
+        [Theory]
+        [InlineData("ps1")]
+        [InlineData("powershell")]
+        [InlineData("PS1")]
+        public void Ps1_TipoExplicitoValeMesmoSemExtensao(string tipo)
+        {
+            var cmd = InstallCommandBuilder.Construir(new Programa { Id = "x", Instalador = "script", Tipo = tipo }, Raiz);
+
+            Assert.EndsWith("powershell.exe", cmd.Arquivo);
+            Assert.EndsWith("-File \"" + Path.Combine(Raiz, "script") + "\"", cmd.Argumentos);
+        }
+
+        [Fact]
         public void CaminhoAbsoluto_IgnoraPastaDeInstaladores()
         {
             var absoluto = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "outro", "a.exe"));

@@ -73,15 +73,15 @@ namespace WinAllApp.Core.Tests
             var licenciado = planos[1];
             Assert.Equal(CategoriaInstalacao.OfflineLicenciado, licenciado.Categoria);
             Assert.Equal(FonteInstalacao.Rede, licenciado.Fonte);
-            Assert.Equal("cmd.exe", licenciado.Comando.Arquivo);
-            Assert.StartsWith("/c \"\"" + PastaRede, licenciado.Comando.Argumentos);
+            Assert.EndsWith("powershell.exe", licenciado.Comando.Arquivo);
+            Assert.StartsWith("-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"" + PastaRede, licenciado.Comando.Argumentos);
             Assert.Contains("Pacote Licenciado", licenciado.Comando.Argumentos);
-            Assert.EndsWith("setup-licenciado.bat\" /qb /norestart\"", licenciado.Comando.Argumentos);
+            Assert.EndsWith("setup-licenciado.ps1\" /qb /norestart", licenciado.Comando.Argumentos);
             Assert.Contains("ativação da licença", licenciado.Motivo);
 
             var gratuito = planos[2];
             Assert.Equal(FonteInstalacao.Rede, gratuito.Fonte);
-            Assert.Equal($"/c \"\"{Path.Combine(PastaRede, "octave-setup.bat")}\" /S\"", gratuito.Comando.Argumentos);
+            Assert.EndsWith($"-File \"{Path.Combine(PastaRede, "octave-setup.ps1")}\" /S", gratuito.Comando.Argumentos);
 
             var copia = planos[3];
             Assert.Equal(AcaoInstalacao.CopiarPasta, copia.Acao);
@@ -173,7 +173,7 @@ namespace WinAllApp.Core.Tests
         [Fact]
         public void Licenciado_AusenteNaRede_PedeOPacoteDeImplantacao()
         {
-            var plano = Roteador(Win10(), "setup-licenciado.bat").Planejar(P("mock-licenciado"));
+            var plano = Roteador(Win10(), "setup-licenciado.ps1").Planejar(P("mock-licenciado"));
             Assert.Equal(AcaoInstalacao.Bloqueado, plano.Acao);
             Assert.Contains("pacote de implantação", plano.Motivo);
         }
@@ -258,12 +258,12 @@ namespace WinAllApp.Core.Tests
                 Directory.CreateDirectory(Path.Combine(rede, "Portatil", "dados"));
                 File.WriteAllText(Path.Combine(rede, "Portatil", "winplot.exe"), "x");
                 File.WriteAllText(Path.Combine(rede, "Portatil", "dados", "exemplo.txt"), "y");
-                File.WriteAllText(Path.Combine(rede, "octave-setup.bat"), "");
+                File.WriteAllText(Path.Combine(rede, "octave-setup.ps1"), "");
                 Directory.CreateDirectory(Path.Combine(rede, "Pacote Licenciado"));
-                File.WriteAllText(Path.Combine(rede, "Pacote Licenciado", "setup-licenciado.bat"), "");
+                File.WriteAllText(Path.Combine(rede, "Pacote Licenciado", "setup-licenciado.ps1"), "");
 
                 var config = ConfigMock();
-                config.Programas.Single(p => p.Id == "mock-licenciado").Instalador = Path.Combine("Pacote Licenciado", "setup-licenciado.bat");
+                config.Programas.Single(p => p.Id == "mock-licenciado").Instalador = Path.Combine("Pacote Licenciado", "setup-licenciado.ps1");
                 var ambiente = AmbienteSistema.Simular(windows, Winget, Choco);
                 var roteador = new RoteadorInstalacao(new ContextoInstalacao(rede, Path.Combine(pasta, "local"), ambiente));
                 var runner = new RunnerFalso(c => c.Arquivo == Winget ? EstrategiaGerenciador.WingetJaInstalado : 0);
@@ -283,8 +283,8 @@ namespace WinAllApp.Core.Tests
                 var comandos = runner.Comandos.ToList();
                 Assert.Equal(3, comandos.Count); // cópia não usa processo
                 Assert.Equal(windows == "10" ? Winget : Choco, comandos[0].Arquivo);
-                Assert.Contains("setup-licenciado.bat", comandos[1].Argumentos);
-                Assert.Contains("octave-setup.bat", comandos[2].Argumentos);
+                Assert.Contains("setup-licenciado.ps1", comandos[1].Argumentos);
+                Assert.Contains("octave-setup.ps1", comandos[2].Argumentos);
                 Assert.True(File.Exists(Path.Combine(pasta, "local", "mock-copia", "dados", "exemplo.txt")));
                 Assert.Contains("Pasta copiada", resultados[3].Mensagem);
                 if (windows == "10") Assert.Contains("Já estava instalado", resultados[0].Mensagem);

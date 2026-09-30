@@ -21,7 +21,7 @@ jobs:
       - name: Compilar (Release, .NET Framework 4.8)
         run: dotnet build WinAllApp.sln -c Release
 
-      - name: Testes da lógica (inclui simulação com .bat fictícios)
+      - name: Testes da lógica (inclui simulação com scripts .ps1 fictícios)
         run: dotnet test tests/WinAllApp.Core.Tests -c Release --no-build --logger "console;verbosity=normal" --logger GitHubActions
 
       - name: Teste da tela WPF (abre a janela e simula o usuário)

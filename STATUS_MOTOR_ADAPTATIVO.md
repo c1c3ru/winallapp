@@ -31,7 +31,7 @@ que vai para o registro.
 
 | Situação | Ação gerada |
 |---|---|
-| Qualquer categoria com instalador na rede | `Process.Start` do instalador da rede (exe direto, `msiexec /i "..."`, ou `cmd /c ""...bat" args"`) |
+| Qualquer categoria com instalador na rede | `Process.Start` do instalador da rede (exe direto, `msiexec /i "..."`, `powershell.exe ... -File "...ps1" args` ou, por compatibilidade, `cmd /c ""...bat" args"`) |
 | `gerenciador`, Win 10/11, sem instalador na rede | `winget install --id <id> --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity [--version X]` |
 | `gerenciador`, Win 7/8.1, sem instalador na rede | `choco install <id> -y --no-progress [--version X]` (só com .NET 4.8 + TLS 1.2 + choco presente) |
 | `copia_pasta` | Cópia recursiva em código (equivalente a `robocopy /E`), sobrescrevendo |
