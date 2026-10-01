@@ -101,7 +101,7 @@ namespace WinAllApp
 
         /// <summary>
         /// Máquina real: detectada pelo registro. Simulação: Windows escolhido em --simular-windows (padrão 10),
-        /// com winget.bat/choco.bat fictícios no lugar das ferramentas reais.
+        /// com winget.ps1/choco.ps1 fictícios no lugar das ferramentas reais.
         /// </summary>
         public static AmbienteSistema CriarAmbiente(string[] args, bool simulacao, string pastaConfig)
         {
@@ -109,8 +109,8 @@ namespace WinAllApp
 
             var mocks = Path.Combine(pastaConfig, "mock-installers");
             return AmbienteSistema.Simular(ValorDaOpcao(args, "--simular-windows") ?? "10",
-                caminhoWinget: Path.Combine(mocks, "winget.bat"),
-                caminhoChoco: Path.Combine(mocks, "choco.bat"),
+                caminhoWinget: Path.Combine(mocks, "winget.ps1"),
+                caminhoChoco: Path.Combine(mocks, "choco.ps1"),
                 dotNet48: !TemOpcao(args, "--sem-dotnet48"),
                 tls12: !TemOpcao(args, "--sem-tls12"));
         }

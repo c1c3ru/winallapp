@@ -36,6 +36,7 @@ namespace WinAllApp.Core.Services.Padronizacao
         public static string CaminhoPowerShell()
         {
             var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            if (string.IsNullOrEmpty(windows)) return "powershell.exe"; // fora do Windows (testes no Linux)
             // Processo de 32 bits num Windows de 64 bits: "Sysnative" evita o redirecionamento para o SysWOW64.
             var sistema = Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess ? "Sysnative" : "System32";
             return Path.Combine(windows, sistema, "WindowsPowerShell", "v1.0", "powershell.exe");

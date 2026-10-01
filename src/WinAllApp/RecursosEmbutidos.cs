@@ -22,7 +22,7 @@ namespace WinAllApp
         }
 
         /// <summary>
-        /// Grava config.simulacao.json e mock-installers\*.bat em <paramref name="pasta"/> e devolve a pasta.
+        /// Grava config.simulacao.json e mock-installers\*.ps1 em <paramref name="pasta"/> e devolve a pasta.
         /// O log de execuções anteriores é apagado para cada simulação começar limpa.
         /// </summary>
         public static string ExtrairSimulacao(string pasta)
@@ -34,7 +34,7 @@ namespace WinAllApp
             var assembly = typeof(RecursosEmbutidos).Assembly;
             foreach (var nome in assembly.GetManifestResourceNames().Where(n => n.StartsWith(PrefixoSimulacao, StringComparison.Ordinal)))
             {
-                // Quebras de linha CRLF garantidas: o cmd.exe interpreta mal .bat só com LF.
+                // Quebras de linha CRLF, como no Windows. Os .ps1 são só ASCII: sem BOM, o PowerShell 2.0 os lê sem problema.
                 var texto = LerTexto(nome).Replace("\r\n", "\n").Replace("\n", "\r\n");
                 // Subpastas (ex.: "Pacote Licenciado", "Portatil\dados") vêm no nome do recurso com \ ou /.
                 var relativo = nome.Substring(PrefixoSimulacao.Length).Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);

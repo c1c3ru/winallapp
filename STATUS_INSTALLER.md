@@ -48,13 +48,14 @@ Tentativas falhadas no mesmo bug de compilação: **0 de 5** (nenhum erro de com
 - Comando silencioso por tipo:
   - `exe` → o próprio instalador + `argumentos`;
   - `msi` → `msiexec.exe /i "<arquivo>" /qn /norestart` (ou os argumentos do config);
-  - `bat`/`cmd` → `cmd.exe /c ""<arquivo>" <argumentos>"`.
+  - `ps1` → `powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "<arquivo>" <argumentos>` (scripts compatíveis com o PowerShell 2.0 do Windows 7; ver `STATUS_POWERSHELL.md`);
+  - `bat`/`cmd` → `cmd.exe /c ""<arquivo>" <argumentos>"` (mantido por compatibilidade).
 - Fila **sequencial e assíncrona** (`InstallQueue` + `ProcessRunner`): `Process.Start` com `UseShellExecute=false`, `CreateNoWindow=true`, espera pelo evento `Exited` via `TaskCompletionSource` (não bloqueia a UI), **timeout** por programa (padrão 60 min), **cancelamento** (encerra o instalador atual e marca o resto como cancelado).
 - Códigos de saída: 0 = sucesso; 1641/3010 = sucesso com reinício; demais = falha (personalizável por programa). Instalador ausente no disco = falha sem executar.
 - Itera **apenas os itens marcados** do laboratório atual.
 - Arquivos de config:
   - `src/WinAllApp/config.json` — **mapa real dos PDFs** (ver abaixo);
-  - `src/WinAllApp/config.simulacao.json` + `mock-installers/*.bat` — simulação sem instalar nada (BL1: Matemática com 2 e "Teste de falhas"; BL2: LCC com 3 e LAMEP sem programas);
+  - `src/WinAllApp/config.simulacao.json` + `mock-installers/*.ps1` — simulação sem instalar nada (BL1: Matemática com 2 e "Teste de falhas"; BL2: LCC com 3 e LAMEP sem programas);
   - `tests/WinAllApp.Core.Tests/TestData/config.teste.json` — LCC (3 programas) e Matemática (2 programas).
 
 ### Mapa real (PDFs "BL1/BL2 - Programas Específicos")

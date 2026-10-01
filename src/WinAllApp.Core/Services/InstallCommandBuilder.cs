@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using WinAllApp.Core.Models;
+using WinAllApp.Core.Services.Padronizacao;
 
 namespace WinAllApp.Core.Services
 {
@@ -8,7 +9,10 @@ namespace WinAllApp.Core.Services
     {
         Exe,
         Msi,
-        Script
+        /// <summary>Arquivo em lotes (.bat/.cmd), via cmd.exe. Mantido por compatibilidade.</summary>
+        Script,
+        /// <summary>Script do Windows PowerShell (.ps1). Deve ser compatível com o PowerShell 2.0 do Windows 7.</summary>
+        PowerShell
     }
 
     /// <summary>Linha de comando pronta para Process.Start.</summary>
@@ -21,7 +25,7 @@ namespace WinAllApp.Core.Services
             CaminhoInstalador = caminhoInstalador;
         }
 
-        /// <summary>Executável iniciado (o próprio instalador, msiexec.exe ou cmd.exe).</summary>
+        /// <summary>Executável iniciado (o próprio instalador, msiexec.exe, powershell.exe ou cmd.exe).</summary>
         public string Arquivo { get; }
 
         public string Argumentos { get; }
@@ -43,7 +47,7 @@ namespace WinAllApp.Core.Services
         {
             var tipo = (programa.Tipo ?? string.Empty).Trim().ToLowerInvariant();
             // "tipo" também aceita a categoria (ex.: "winget", "copia_pasta"): aí o tipo do arquivo vem da extensão.
-            if (tipo != "exe" && tipo != "msi" && tipo != "bat" && tipo != "cmd")
+            if (tipo != "exe" && tipo != "msi" && tipo != "bat" && tipo != "cmd" && tipo != "ps1" && tipo != "powershell")
                 tipo = (Path.GetExtension(programa.Instalador ?? string.Empty) ?? string.Empty).TrimStart('.').ToLowerInvariant();
 
             switch (tipo)
@@ -51,6 +55,8 @@ namespace WinAllApp.Core.Services
                 case "msi": return TipoInstalador.Msi;
                 case "bat":
                 case "cmd": return TipoInstalador.Script;
+                case "ps1":
+                case "powershell": return TipoInstalador.PowerShell;
                 default: return TipoInstalador.Exe;
             }
         }
@@ -81,10 +87,23 @@ namespace WinAllApp.Core.Services
             return Path.GetFullPath(Path.Combine(pastaConfig, pasta));
         }
 
-        /// <summary>Comando de uma ferramenta (winget.exe, choco.exe). Um .bat/.cmd (simulação) roda via cmd.exe.</summary>
+        /// <summary>
+        /// Linha do powershell.exe para rodar um .ps1. -File (e não -Command) devolve o "exit N" do script como código
+        /// de saída, e existe desde o PowerShell 2.0 (Windows 7). -ExecutionPolicy Bypass vale só para este processo:
+        /// não muda a política do computador e dispensa assinar os scripts da pasta de rede.
+        /// </summary>
+        public static InstallCommand ConstruirPowerShell(string caminho, string argumentos)
+        {
+            var args = (argumentos ?? string.Empty).Trim();
+            var linha = $"-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{caminho}\"";
+            return new InstallCommand(ExecutorPowerShell.CaminhoPowerShell(), args.Length == 0 ? linha : linha + " " + args, caminho);
+        }
+
+        /// <summary>Comando de uma ferramenta (winget.exe, choco.exe). Na simulação o substituto é um .ps1 (ou .bat).</summary>
         public static InstallCommand ConstruirFerramenta(string caminho, string argumentos)
         {
             var extensao = (Path.GetExtension(caminho) ?? string.Empty).ToLowerInvariant();
+            if (extensao == ".ps1") return ConstruirPowerShell(caminho, argumentos);
             if (extensao == ".bat" || extensao == ".cmd")
                 return new InstallCommand("cmd.exe", $"/c \"\"{caminho}\" {argumentos}\"", caminho);
             return new InstallCommand(caminho, argumentos, caminho);
@@ -107,6 +126,9 @@ namespace WinAllApp.Core.Services
                     // cmd /c ""C:\pasta com espaço\setup.bat" /args": as aspas externas preservam as internas.
                     var linha = args.Length == 0 ? $"\"{caminho}\"" : $"\"{caminho}\" {args}";
                     return new InstallCommand("cmd.exe", $"/c \"{linha}\"", caminho);
+
+                case TipoInstalador.PowerShell:
+                    return ConstruirPowerShell(caminho, args);
 
                 default:
                     return new InstallCommand(caminho, args, caminho);

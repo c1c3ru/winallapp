@@ -37,14 +37,14 @@ namespace WinAllApp.UI.Tests
         }
 
         [Fact]
-        public async Task ModoSimulacao_ExtraiOsBatsEInstalaSoOsSelecionados()
+        public async Task ModoSimulacao_ExtraiOsScriptsEInstalaSoOsSelecionados()
         {
             var carga = Program.CarregarConfig(new[] { "--simulacao" }, out var origem);
 
             Assert.StartsWith("SIMULAÇÃO", origem);
             Assert.True(carga.Valido, string.Join("; ", carga.Erros));
             var mocks = Path.Combine(carga.PastaConfig, "mock-installers");
-            Assert.Contains("\r\n", File.ReadAllText(Path.Combine(mocks, "vscode-setup.bat")));
+            Assert.Contains("\r\n", File.ReadAllText(Path.Combine(mocks, "vscode-setup.ps1")));
 
             var pastaInstaladores = InstallCommandBuilder.ResolverPastaInstaladores(carga.Config, carga.PastaConfig);
             SynchronizationContext.SetSynchronizationContext(null); // vereditos da autodescoberta aplicados direto
@@ -60,13 +60,13 @@ namespace WinAllApp.UI.Tests
             Assert.All(resultados, r => Assert.True(r.Sucesso, r.Mensagem));
             var log = File.ReadAllLines(Path.Combine(mocks, "instalacoes-simuladas.log"));
             Assert.Equal(2, log.Length);
-            Assert.Contains(log, l => l.Contains("vscode-setup.bat /VERYSILENT /NORESTART"));
-            Assert.Contains(log, l => l.Contains("codeblocks-setup.bat /S"));
+            Assert.Contains(log, l => l.Contains("vscode-setup.ps1 /VERYSILENT /NORESTART"));
+            Assert.Contains(log, l => l.Contains("codeblocks-setup.ps1 /S"));
         }
     
         /// <summary>
-        /// Simulação completa com os .bat reais: força Windows 10 e depois Windows 7 e confere no log
-        /// o comando que chegou a cada "instalador" (winget.bat, choco.bat, pasta de rede e cópia).
+        /// Simulação completa com os .ps1 reais: força Windows 10 e depois Windows 7 e confere no log
+        /// o comando que chegou a cada "instalador" (winget.ps1, choco.ps1, pasta de rede e cópia).
         /// </summary>
         [Theory]
         [InlineData("10", "winget install --id GeoGebra.Classic --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity")]
@@ -93,8 +93,8 @@ namespace WinAllApp.UI.Tests
             foreach (var linha in log) _saida.WriteLine("log: " + linha);
             Assert.Equal(3, log.Length);
             Assert.EndsWith(comandoGerenciador, log[0]);
-            Assert.EndsWith("setup-licenciado.bat /qb /norestart", log[1]);
-            Assert.EndsWith("octave-setup.bat /S", log[2]);
+            Assert.EndsWith("setup-licenciado.ps1 /qb /norestart", log[1]);
+            Assert.EndsWith("octave-setup.ps1 /S", log[2]);
             Assert.True(File.Exists(Path.Combine(carga.PastaConfig, "destino-copias", "mock-copia", "dados", "exemplo.txt")));
         }
 
